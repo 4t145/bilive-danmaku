@@ -1,0 +1,11 @@
+[package]
+name = "bilive-danmu"
+version = "0.1.0"
+edition = "2021"
+members = ["./src/test"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = "1.0.136"
+serde_json = "1.0.79"
+
