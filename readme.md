@@ -2,6 +2,10 @@
 这个库提供模拟bilibili直播的wss连接的功能，目前还在开发中
 
 ## 使用例
+```toml
+bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
+```
+
 ```rust
 use bilive_danmaku::{RoomService}
 
