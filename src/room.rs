@@ -14,9 +14,10 @@ pub struct Disconnected {
     host_list: Vec<Host>,
 }
 pub struct Connected {
-    pub fallback: Disconnected,
+    fallback: Disconnected,
     broadcastor: broadcast::Sender<Event>,
-    pub process_handle: JoinHandle<()>,
+    process_handle: JoinHandle<()>,
+    conn_handle: RoomConnectionHandle
 }
 
 pub struct RoomService<S> {
@@ -129,6 +130,7 @@ impl RoomService<Disconnected> {
                 let status = Connected {
                     fallback: self.status,
                     broadcastor,
+                    conn_handle: conn.handle,
                     process_handle,
                 };
                 Ok(RoomService {
@@ -146,6 +148,17 @@ impl RoomService<Disconnected> {
 impl RoomService<Connected> {
     pub fn subscribe(&mut self) -> broadcast::Receiver<Event> {
         self.status.broadcastor.subscribe()
+    }
+
+    pub fn close(self) -> RoomService<Disconnected> {
+        self.status.process_handle.abort();
+        self.status.conn_handle.hb_handle.abort();
+        self.status.conn_handle.send_handle.abort();
+        self.status.conn_handle.recv_handle.abort();
+        RoomService{
+            roomid: self.roomid,
+            status: self.status.fallback,
+        }
     }
 }
 
@@ -203,6 +216,12 @@ pub enum ConnectError {
 use crate::{types::*, RawPacket, event::Event};
 pub struct RoomConnection {
     pack_rx: mpsc::Receiver<RawPacket>,
+    handle: RoomConnectionHandle
+}
+pub struct RoomConnectionHandle {
+    send_handle: tokio::task::JoinHandle<()>,
+    recv_handle: tokio::task::JoinHandle<()>,
+    hb_handle: tokio::task::JoinHandle<()>,
 }
 
 impl RoomConnection {
@@ -254,12 +273,13 @@ impl RoomConnection {
             }
         };
 
-        tokio::spawn(send);
-        tokio::spawn(recv);
-        tokio::spawn(hb);
+        let send_handle = tokio::spawn(send);
+        let recv_handle = tokio::spawn(recv);
+        let hb_handle = tokio::spawn(hb);
 
         Ok(RoomConnection{
-            pack_rx: pack_inbound_rx
+            pack_rx: pack_inbound_rx,
+            handle: RoomConnectionHandle { send_handle, recv_handle, hb_handle}
         })
     }
 

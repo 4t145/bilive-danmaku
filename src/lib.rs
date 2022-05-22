@@ -1,3 +1,21 @@
+//! # 使用
+//! 
+//! 
+//!```
+//!use bilive_danmaku::{RoomService}
+//!async fn service() {
+//!    let service = RoomService::new(477317922).init().await.unwrap();
+//!    let service = service.connect().await.unwrap();
+//!    // 这里会获得一个 broadcast::Reciever<Event>
+//!    let mut events_rx = service.subscribe();
+//!    while let Some(evt) = events_rx.recv().await {
+//!        // 处理事件
+//!        todo!()
+//!    }
+//!    let service = service.close();
+//!}
+//!```
+
 #![allow(dead_code)]
 #![feature(split_array)]
 use std::io::Write;

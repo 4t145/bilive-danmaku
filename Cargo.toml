@@ -1,5 +1,5 @@
 [package]
-name = "bilive-danmu"
+name = "bilive-danmaku"
 version = "0.0.1-wip"
 edition = "2021"
 members = ["./src/test"]
