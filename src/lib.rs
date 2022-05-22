@@ -1,86 +1,131 @@
+#![allow(dead_code)]
 #![feature(split_array)]
-
 use std::io::Write;
-mod operation;
-#[derive(Debug)]
-struct PacketHead {
-    size: i32,
-    header_size: i16,
-    version: i16,
-    opcode: i32,
-    sequence: i32,
+mod room;
+pub use room::*;
+pub(crate) mod cmd;
+pub mod model;
+pub mod event;
+
+#[cfg(test)]
+mod tests;
+
+fn write_u32_be(writer: &mut [u8], val: u32) -> &mut [u8] {
+    let (write, writer) = writer.split_array_mut::<4>();
+    *write = val.to_be_bytes();
+    writer
+}
+
+fn write_u16_be(writer: &mut [u8], val: u16) -> &mut [u8] {
+    let (write, writer) = writer.split_array_mut::<2>();
+    *write = val.to_be_bytes();
+    writer
+}
+
+fn read_u32_be(buffer: &[u8]) -> (u32, &[u8]) {
+    let (read, tail) = buffer.split_array_ref::<4>();
+    (u32::from_be_bytes(*read), tail)
+}
+
+fn read_u16_be(buffer: &[u8]) -> (u16, &[u8]) {
+    let (read, tail) = buffer.split_array_ref::<2>();
+    (u16::from_be_bytes(*read), tail)
+}
+
+pub(crate) mod types;
+
+
+#[derive(Debug, Clone)]
+enum Data {
+    Json(serde_json::Value),
+    Popularity(u32),
+    Deflate(String),
+}
+
+#[derive(Debug, Clone)]
+struct RawPacketHead {
+    size: u32,
+    header_size: u16,
+    proto_code: u16,
+    opcode: u32,
+    sequence: u32,
 }
 
 #[repr(transparent)]
-#[derive(Debug)]
-struct PacketData(Vec<u8>);
+#[derive(Debug, Clone)]
+struct RawPacketData(Vec<u8>);
 
-#[derive(Debug)]
-pub struct Packet {
-    head: PacketHead,
-    data: PacketData
+#[derive(Debug, Clone)]
+struct RawPacket {
+    head: RawPacketHead,
+    data: RawPacketData
 }
 
-impl Packet {
-    pub fn from_buffer(buffer: Vec<u8>) -> Self {
-
-        fn read_i32_be(buffer: &[u8]) -> (i32, &[u8]) {
-            let (read, tail) = buffer.split_array_ref::<4>();
-            (i32::from_be_bytes(*read), tail)
+impl RawPacket {
+    fn heartbeat() -> Self {
+        RawPacket {
+            head: RawPacketHead {
+                size: 31,
+                header_size: 16,
+                proto_code: 1,
+                opcode: 2,
+                sequence: 1,
+            },
+            data: RawPacketData(b"[object Object]".to_vec()),
         }
-        
-        fn read_i16_be(buffer: &[u8]) -> (i16, &[u8]) {
-            let (read, tail) = buffer.split_array_ref::<2>();
-            (i16::from_be_bytes(*read), tail)
-        }
+    }
 
-        let (size, buffer)= read_i32_be(&buffer);
-        let (header_size, buffer)= read_i16_be(buffer);
-        let (version, buffer)= read_i16_be(buffer);
-        let (opcode, buffer)= read_i32_be(buffer);
-        let (sequence, buffer)= read_i32_be(buffer);
-        let head = PacketHead {
+    fn from_buffer(buffer: &[u8]) -> Self {
+        let (size, buffer)= read_u32_be(&buffer);
+        let (header_size, buffer)= read_u16_be(buffer);
+        let (version, buffer)= read_u16_be(buffer);
+        let (opcode, buffer)= read_u32_be(buffer);
+        let (sequence, buffer)= read_u32_be(buffer);
+        let head = RawPacketHead {
             size,
             header_size,
-            version,
+            proto_code: version,
             opcode,
             sequence,
         };
     
-        let data = PacketData(buffer.to_owned());
+        let data = RawPacketData(buffer.to_owned());
     
-        Packet {head, data}
+        RawPacket {head, data}
     }
 
-    pub fn build(op:Operation, data: Vec<u8>) -> Self {
-        let header_size = data.len() as i16;
-        let size = (16 + header_size) as i32;
-        let opcode = op as i32;
+    fn from_buffers(buffer: &[u8]) -> Vec<Self> {
+        let mut packets = vec![];
+        let mut ptr = 0;
+        loop {
+            let (size, _)= read_u32_be(&buffer[ptr..ptr+4]);
+            let size = size as usize;
+            packets.push(Self::from_buffer(&buffer[ptr..ptr+size]));
+            ptr += size;
+            if ptr>=buffer.len() {
+                break;
+            }
+        }
+        return packets;
+    }
+
+    fn build(op:Operation, data: Vec<u8>) -> Self {
+        let header_size = 16 as u16;
+        let size = (16 + data.len()) as u32;
+        let opcode = op as u32;
         Self {
-            head: PacketHead { 
+            head: RawPacketHead { 
                 size, 
                 header_size, 
-                version: 1, 
+                proto_code:1, 
                 opcode, 
                 sequence:1 
             },
-            data: PacketData(data)
+            data: RawPacketData(data)
         }
     }
 
-    pub fn ser(self) -> Vec<u8> {
-        fn write_i32_be(writer: &mut [u8], val: i32) -> &mut [u8] {
-            let (write, writer) = writer.split_array_mut::<4>();
-            *write = val.to_be_bytes();
-            writer
-        }
-        
-        fn write_i16_be(writer: &mut [u8], val: i16) -> &mut [u8] {
-            let (write, writer) = writer.split_array_mut::<2>();
-            *write = val.to_be_bytes();
-            writer
-        }
-
+    fn ser(self) -> Vec<u8> {
         let head = self.head;
         let data = self.data.0;
         let mut buffer = unsafe {
@@ -91,18 +136,69 @@ impl Packet {
         };
 
         let mut writer:&mut [u8] = &mut buffer;
-        writer = write_i32_be(writer, head.size);
-        writer = write_i16_be(writer, head.header_size);
-        writer = write_i16_be(writer, head.version);
-        writer = write_i32_be(writer, head.opcode);
-        writer = write_i32_be(writer, head.sequence);
+        writer = write_u32_be(writer, head.size);
+        writer = write_u16_be(writer, head.header_size);
+        writer = write_u16_be(writer, head.proto_code);
+        writer = write_u32_be(writer, head.opcode);
+        writer = write_u32_be(writer, head.sequence);
         writer.write(&data).unwrap();
         buffer
+    }
+
+    fn get_datas(self) -> Vec<Data> {
+        match self.head.proto_code {
+            // raw json
+            0 => {
+                if let Ok(data_json)=serde_json::from_slice::<serde_json::Value>(&self.data.0) {
+                    vec!(Data::Json(data_json))
+                } else {
+                    // println!("cannot deser {}", String::from_utf8(self.data.0).unwrap() );
+                    vec![]
+                }
+            }
+            1 => {
+                let (bytes, _) = self.data.0.split_array_ref::<4>();
+                let popularity = u32::from_be_bytes(*bytes);
+                vec!(Data::Popularity(popularity))
+            }
+            2 => {
+                let deflated = deflate::deflate_bytes(&self.data.0);
+                let utf8 = String::from_utf8(deflated).unwrap();
+                vec!(Data::Deflate(utf8))
+            }
+            3 => {
+                use std::io::Read;
+                let read_stream = std::io::Cursor::new(self.data.0) ;
+                let mut input = brotli::Decompressor::new(read_stream, 4096);
+                let mut buffer = Vec::new();
+                match input.read_to_end(&mut buffer) {
+                    Ok(_size) => {                        
+                        let unpacked = RawPacket::from_buffers(&buffer);
+                        let mut packets = vec![];
+                        for p in unpacked {
+                            for sub_p in p.get_datas() {
+                                packets.push(sub_p)
+                            }
+                        }
+                        packets
+                    }
+                    Err(e) => {
+                        println!("{}",e);
+                        vec![]
+                    }     
+                }
+            }
+            _ => {
+                println!("不支持的操作码：{}", self.head.proto_code);
+                vec![]
+            }
+            // 
+        }
     }
 }
 
 #[derive(Debug)]
-pub enum Operation {
+enum Operation {
     Handshake,
     HandshakeReply,
     Heartbeat,
@@ -120,47 +216,33 @@ pub enum Operation {
     RegisterReply,
     Unregister,
     UnregisterReply,
-
 }
 
-impl Operation {
-    unsafe fn from_i32(code:i32) -> Self {
-        let code = code as u8;
-        std::mem::transmute(code)
-    }
+use serde::{Serialize};
+#[derive(Debug, Serialize)]
+struct Auth {
+    uid: u64,
+    roomid: u64,
+    protover: i32,
+    platform: &'static str,
+    r#type: i32,
+    key: Option<String>
 }
 
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn from_buffer_test() {
-        let p = Packet::from_buffer(vec![
-            0, 0, 0, 26, 0, 16, 0, 1, 0, 0, 0, 8, 0, 0, 0, 1, 123, 34, 99, 111, 100, 101, 34, 58,
-            48, 125,
-        ]);
-        dbg!(p);
+impl Auth {
+    fn new(uid: u64, roomid: u64, key:Option<String>) -> Self {
+        Self {
+            uid, 
+            roomid,
+            protover: 3,
+            platform: "web",
+            r#type: 2,
+            key
+        }
     }
 
-    #[test]
-    fn pack() {
-        let head = PacketHead {
-            size: 16+16,
-            header_size: 16,
-            version: 1,
-            opcode: 2,
-            sequence: 1,
-        };
-        let data = PacketData (vec![0x33;16]);
-        let p = Packet { head, data };
-        let buf = p.ser();
-        dbg!(buf);
-    }
-
-    #[test]
-    fn build() {
-        let head = Packet::build(Operation::UnregisterReply, vec![0,0,0,0]);
-        dbg!(head);
+    fn ser(self) -> Vec<u8> {
+        let jsval = serde_json::json!(self);
+        jsval.to_string().as_bytes().to_owned()
     }
 }

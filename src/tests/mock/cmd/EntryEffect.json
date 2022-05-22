@@ -1,0 +1,29 @@
+{
+  "cmd": "ENTRY_EFFECT",
+  "data": {
+    "basemap_url": "https://i0.hdslb.com/bfs/live/mlive/11a6e8eb061c3e715d0a6a2ac0ddea2faa15c15e.png",
+    "business": 1,
+    "copy_color": "#ffffff",
+    "copy_writing": "欢迎舰长 <%_Mercur...%> 进入直播间",
+    "copy_writing_v2": " 欢迎舰长 <%_Mercu…%> 进入直播间",
+    "effect_silent_time": 300,
+    "effective_time": 2,
+    "face": "https://i1.hdslb.com/bfs/face/3fc45178bb51b7fac273c3ac058b08e7a28b6d7e.jpg",
+    "highlight_color": "#E6FF00",
+    "icon_list": [],
+    "id": 4,
+    "identities": 6,
+    "max_delay_time": 7,
+    "mock_effect": 0,
+    "priority": 1,
+    "privilege_type": 3,
+    "show_avatar": 1,
+    "target_id": 1472906636,
+    "trigger_time": 1651264960568609008,
+    "uid": 3780985,
+    "web_basemap_url": "https://i0.hdslb.com/bfs/live/mlive/11a6e8eb061c3e715d0a6a2ac0ddea2faa15c15e.png",
+    "web_close_time": 0,
+    "web_effect_close": 0,
+    "web_effective_time": 2
+  }
+}

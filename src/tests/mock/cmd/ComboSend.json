@@ -1,0 +1,38 @@
+{
+  "cmd": "COMBO_SEND",
+  "data": {
+    "action": "投喂",
+    "batch_combo_id": "batch:gift:combo_id:23253297:434334701:30607:1651254399.9495",
+    "batch_combo_num": 24,
+    "combo_id": "gift:combo_id:23253297:434334701:30607:1651254399.9486",
+    "combo_num": 24,
+    "combo_total_coin": 0,
+    "dmscore": 72,
+    "gift_id": 30607,
+    "gift_name": "小心心",
+    "gift_num": 0,
+    "is_show": 1,
+    "medal_info": {
+      "anchor_roomid": 0,
+      "anchor_uname": "",
+      "guard_level": 0,
+      "icon_id": 0,
+      "is_lighted": 1,
+      "medal_color": 13081892,
+      "medal_color_border": 13081892,
+      "medal_color_end": 13081892,
+      "medal_color_start": 13081892,
+      "medal_level": 17,
+      "medal_name": "脆鲨",
+      "special": "",
+      "target_id": 434334701
+    },
+    "name_color": "",
+    "r_uname": "七海Nana7mi",
+    "ruid": 434334701,
+    "send_master": null,
+    "total_num": 24,
+    "uid": 23253297,
+    "uname": "电竞片寄凉太"
+  }
+}

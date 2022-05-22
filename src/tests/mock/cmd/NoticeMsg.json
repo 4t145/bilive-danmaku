@@ -1,0 +1,43 @@
+{
+  "business_id": "31115",
+  "cmd": "NOTICE_MSG",
+  "full": {
+    "background": "#6098FFFF",
+    "color": "#FFFFFFFF",
+    "head_icon": "http://i0.hdslb.com/bfs/live/00f26756182b2e9d06c00af23001bc8e10da67d0.webp",
+    "head_icon_fa": "http://i0.hdslb.com/bfs/live/77983005023dc3f31cd599b637c83a764c842f87.png",
+    "head_icon_fan": 36,
+    "highlight": "#FDFF2FFF",
+    "tail_icon": "http://i0.hdslb.com/bfs/live/822da481fdaba986d738db5d8fd469ffa95a8fa1.webp",
+    "tail_icon_fa": "http://i0.hdslb.com/bfs/live/38cb2a9f1209b16c0f15162b0b553e3b28d9f16f.png",
+    "tail_icon_fan": 4,
+    "time": 20
+  },
+  "half": {
+    "background": "#7BB6F2FF",
+    "color": "#FFFFFFFF",
+    "head_icon": "http://i0.hdslb.com/bfs/live/358cc52e974b315e83eee429858de4fee97a1ef5.png",
+    "highlight": "#FDFF2FFF",
+    "tail_icon": "",
+    "time": 15
+  },
+  "id": 2,
+  "link_url": "https://live.bilibili.com/22894962?accept_quality=%5B10000%5D&broadcast_type=0&current_qn=10000&current_quality=10000&is_room_feed=1&live_play_network=other&p2p_type=0&playurl_h264=http%3A%2F%2Fd1--cn-gotcha04.bilivideo.com%2Flive-bvc%2F879686%2Flive_1958703906_84014756.flv%3Fexpires%3D1651267532%26len%3D0%26oi%3D0%26pt%3D%26qn%3D150%26trid%3D10001e32953bd4e94ac2b897a013084e4744%26sigparams%3Dcdn%2Cexpires%2Clen%2Coi%2Cpt%2Cqn%2Ctrid%26cdn%3Dcn-gotcha04%26sign%3D223ac7fda5c71584a5fb62b3b6cc3580%26sk%3D1a3186e44f2e062c5f790db5c2b0a7a0%26p2p_type%3D0%26src%3D8%26sl%3D1%26flowtype%3D0%26source%3Dbatch%26order%3D1%26machinezone%3Dylf%26pp%3Dsrt%26site%3D576356acbe54be0a335b1ce24fe4b104&playurl_h265=&quality_description=%5B%7B%22qn%22%3A10000%2C%22desc%22%3A%22%E5%8E%9F%E7%94%BB%22%7D%5D&from=28003&extra_jump_from=28003&live_lottery_type=1",
+  "marquee_id": "",
+  "msg_common": "<%夜然z%>投喂:<%靡烟miya%>1个鸿运小电视，点击前往TA的房间吧！",
+  "msg_self": "<%夜然z%>投喂:<%靡烟miya%>1个鸿运小电视，快来围观吧！",
+  "msg_type": 2,
+  "name": "分区道具抽奖广播样式",
+  "notice_type": 0,
+  "real_roomid": 22894962,
+  "roomid": 22894962,
+  "scatter": { "max": 0, "min": 0 },
+  "shield_uid": -1,
+  "side": {
+    "background": "",
+    "border": "",
+    "color": "",
+    "head_icon": "",
+    "highlight": ""
+  }
+}

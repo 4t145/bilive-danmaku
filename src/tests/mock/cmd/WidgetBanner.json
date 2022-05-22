@@ -1,0 +1,27 @@
+{
+  "cmd": "WIDGET_BANNER",
+  "data": {
+    "timestamp": 1651254417,
+    "widget_list": {
+      "153": {
+        "band_id": 100356,
+        "cover": "",
+        "id": 153,
+        "is_add": true,
+        "jump_url": "https://live.bilibili.com/activity/live-activity-battle/index.html?app_name=april_red_envelope&is_live_half_webview=1&hybrid_rotate_d=1&hybrid_half_ui=1,3,100p,70p,0,0,0,0,12,0;2,2,375,100p,0,0,0,0,12,0;3,3,100p,70p,0,0,0,0,12,0;4,2,375,100p,0,0,0,0,12,0;5,3,100p,70p,0,0,0,0,12,0;6,3,100p,70p,0,0,0,0,12,0;7,3,100p,70p,0,0,0,0,12,0;8,3,100p,70p,0,0,0,0,12,0&room_id=21452505&uid=434334701#/april_red_envelope",
+        "platform_in": ["live", "blink", "live_link", "web", "pc_link"],
+        "site": 1,
+        "stay_time": 5,
+        "sub_data": "%7B%22task_status%22%3A0%2C%22current_val%22%3A7216%2C%22target_val%22%3A117218%2C%22time_out%22%3A894%2C%22reward_price%22%3A405%7D",
+        "sub_key": "",
+        "tip_bottom_color": "#F95E5E",
+        "tip_text": "限时红包任务",
+        "tip_text_color": "#F9F8F8",
+        "title": "春日限时红包任务",
+        "type": 1,
+        "url": "",
+        "web_cover": ""
+      }
+    }
+  }
+}

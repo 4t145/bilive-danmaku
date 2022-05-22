@@ -1,0 +1,47 @@
+{
+  "cmd": "SUPER_CHAT_MESSAGE_JPN",
+  "data": {
+    "background_bottom_color": "#2A60B2",
+    "background_color": "#EDF5FF",
+    "background_icon": "",
+    "background_image": "https://i0.hdslb.com/bfs/live/a712efa5c6ebc67bafbe8352d3e74b820a00c13e.png",
+    "background_price_color": "#7497CD",
+    "end_time": 1651254477,
+    "gift": { "gift_id": 12000, "gift_name": "醒目留言", "num": 1 },
+    "id": "3873280",
+    "is_ranked": 1,
+    "medal_info": {
+      "anchor_roomid": 12235923,
+      "anchor_uname": "神楽Mea_NHOTBOT",
+      "icon_id": 0,
+      "medal_color": "#5c968e",
+      "medal_level": 4,
+      "medal_name": "財布",
+      "special": "",
+      "target_id": 349991143
+    },
+    "message": "可以踢我吗",
+    "message_jpn": "私を蹴ってもいいですか?",
+    "price": 30,
+    "rate": 1000,
+    "start_time": 1651254417,
+    "time": 59,
+    "token": "BFE2F42B",
+    "ts": 1651254418,
+    "uid": "1689814059",
+    "user_info": {
+      "face": "http://i0.hdslb.com/bfs/face/member/noface.jpg",
+      "face_frame": "https://i0.hdslb.com/bfs/live/80f732943cc3367029df65e267960d56736a82ee.png",
+      "guard_level": 3,
+      "is_main_vip": 0,
+      "is_svip": 0,
+      "is_vip": 0,
+      "level_color": "#61c05a",
+      "manager": 0,
+      "title": "0",
+      "uname": "framboisesame",
+      "user_level": 16
+    }
+  },
+  "roomid": "21452505"
+}

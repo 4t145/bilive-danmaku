@@ -1,0 +1,35 @@
+{
+  "cmd": "INTERACT_WORD",
+  "data": {
+    "contribution": { "grade": 0 },
+    "dmscore": 16,
+    "fans_medal": {
+      "anchor_roomid": 21596783,
+      "guard_level": 0,
+      "icon_id": 0,
+      "is_lighted": 1,
+      "medal_color": 12478086,
+      "medal_color_border": 12478086,
+      "medal_color_end": 12478086,
+      "medal_color_start": 12478086,
+      "medal_level": 16,
+      "medal_name": "给吧",
+      "score": 101554,
+      "special": "",
+      "target_id": 238444767
+    },
+    "identities": [3, 1],
+    "is_spread": 0,
+    "msg_type": 1,
+    "roomid": 8765806,
+    "score": 1651351831472,
+    "spread_desc": "",
+    "spread_info": "",
+    "tail_icon": 0,
+    "timestamp": 1651240277,
+    "trigger_time": 1651240276323659500,
+    "uid": 33778290,
+    "uname": "ASD设计",
+    "uname_color": ""
+  }
+}

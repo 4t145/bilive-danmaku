@@ -1,0 +1,14 @@
+{
+  "cmd": "COMMON_NOTICE_DANMAKU",
+  "data": {
+    "content_segments": [
+      {
+        "font_color": "#FB7299",
+        "text": "春日限时任务：任务即将结束，抓紧完成获取405元红包奖励吧！未完成任务进度将重置",
+        "type": 1
+      }
+    ],
+    "dmscore": 144,
+    "terminals": [1, 2, 3, 4, 5]
+  }
+}

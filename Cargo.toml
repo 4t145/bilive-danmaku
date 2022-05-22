@@ -1,11 +1,16 @@
 [package]
 name = "bilive-danmu"
-version = "0.1.0"
+version = "0.0.1-wip"
 edition = "2021"
 members = ["./src/test"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = "1.0.136"
+serde = {version = "1.0.136", features = ["derive"]}
 serde_json = "1.0.79"
-
+tokio = {version = "1.18.2", features = ["full"]}
+futures-util = "*"
+tokio-tungstenite = {version = "0.17.1", features = ["native-tls"]}
+reqwest = "*"
+brotli = "3.3.4"
+deflate = "1.0.0"

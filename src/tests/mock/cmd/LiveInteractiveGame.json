@@ -1,0 +1,44 @@
+[
+  {
+    "cmd": "LIVE_INTERACTIVE_GAME",
+    "data": {
+      "anchor_info": null,
+      "anchor_lottery": null,
+      "fans_medal_level": 15,
+      "gift_id": 0,
+      "gift_name": "",
+      "gift_num": 0,
+      "guard_level": 0,
+      "msg": "不慌，花蛋正在做饭",
+      "paid": false,
+      "pk_info": null,
+      "price": 0,
+      "timestamp": 1651312900,
+      "type": 2,
+      "uface": "",
+      "uid": 8639921,
+      "uname": "魔法幻境"
+    }
+  },
+  {
+    "cmd": "LIVE_INTERACTIVE_GAME",
+    "data": {
+      "anchor_info": null,
+      "anchor_lottery": null,
+      "fans_medal_level": 15,
+      "gift_id": 0,
+      "gift_name": "",
+      "gift_num": 0,
+      "guard_level": 0,
+      "msg": "???",
+      "paid": false,
+      "pk_info": null,
+      "price": 0,
+      "timestamp": 1651313003,
+      "type": 2,
+      "uface": "",
+      "uid": 934391,
+      "uname": "sower"
+    }
+  }
+]
