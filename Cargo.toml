@@ -14,3 +14,7 @@ tokio-tungstenite = {version = "0.17.1", features = ["native-tls"]}
 reqwest = "*"
 brotli = "3.3.4"
 deflate = "1.0.0"
+
+
+[features]
+debug = []

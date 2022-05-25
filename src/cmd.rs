@@ -1,14 +1,66 @@
+#![allow(unused_variables)]
+
+#[derive(Debug, serde::Deserialize)]
+pub struct OnlineRankTop3ListItem {
+    msg: String,
+    rank: u64
+}
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(tag = "cmd", content="data", rename_all = "SCREAMING_SNAKE_CASE")]
 pub(crate) enum Cmd {
-    ComboSend,
-    CommanNoticeDanmuku,
-    EnterEffect,
-    HotBuyNum,
-    LiveInteractiveGame,
-    OnlineRankV2,
-    StopLiveRoomList,
+    ComboSend{
+        action: String,
+        batch_combo_num: u64,
+        combo_total_coin: u64,
+        gift_name: String,
+        gift_id: u64,
+        user: User,
+    },
+    CommonNoticeDanmaku{},
+    EntryEffect{
+
+    },
+    GuardBuy {
+        gift_id: u64,
+        gift_name: String,
+        guard_level: u64,
+        price: u64,
+        num: u64,
+        uid: u64,
+        username: String
+    },
+    HotBuyNum{},
+    HotRankChangedV2 {
+        area_name: String,
+        rank: u64,
+        rank_desc: String,
+    },
+    HotRankSettlementV2 {
+        area_name: String,
+        rank: u64,
+        uname: String,
+        face: String
+    },
+    LiveInteractiveGame{},
+    OnlineRankV2{},
+    OnlineRankTop3{
+        dmscore: u64,
+        list: Vec<OnlineRankTop3ListItem>
+    },
+    PopularityRedPocketStart {
+
+    },
+    RoomRealTimeMessageUpdate {
+        fans: u64,
+        fans_club: u64,
+        red_notice: i64,
+        roomid: u64
+    },
+    UserToastMsg {
+
+    },
+    StopLiveRoomList{},
     InteractWord{
         fans_medal: Option<FansMedal>,
         #[serde(flatten)]
@@ -18,7 +70,7 @@ pub(crate) enum Cmd {
         num: u64
     },
     OnlineRankCount {
-        _count: u64
+        count: u64
     },
     DanmuMsg {
         fans_medal: Option<FansMedal>,
@@ -63,6 +115,13 @@ use serde_json::Value;
 
 use crate::{model::*, event::Event};
 
+fn medal_filter(fans_medal: Option<FansMedal>) -> Option<FansMedal> {
+    match fans_medal {
+        Some(FansMedal { medal_level: 0, .. }) | None => None,
+        _ => fans_medal,
+    }
+}
+
 #[derive(Debug)]
 pub enum CmdDeserError {
     CannotDeser {
@@ -98,7 +157,11 @@ impl Cmd {
         match &val["cmd"] {
             Value::String(cmd) => {
                 match cmd.as_str() {
-                    "NOTICE_MSG"|"WIDGET_BANNER" => {
+                    "NOTICE_MSG"
+                    |"WIDGET_BANNER"
+                    |"HOT_RANK_CHANGED"
+                    |"HOT_RANK_SETTLEMENT"
+                    => {
                         Err(CmdDeserError::Ignored { tag: cmd.clone() })
                     }
                     "DANMU_MSG" => {
@@ -165,7 +228,10 @@ impl Cmd {
     pub fn as_event(self) -> Option<Event> {
         match self {
             Cmd::InteractWord { fans_medal, user } 
-                => Some(Event::EnterRoom {user, fans_medal}),
+                => Some(Event::EnterRoom {
+                    user, 
+                    fans_medal:medal_filter(fans_medal)
+                }),
             Cmd::DanmuMsg { fans_medal, user, message ,emoticon} => {
                 match emoticon {
                     Some(emoticon) =>  Some(Event::Danmaku { 
@@ -192,8 +258,13 @@ impl Cmd {
             Cmd::WatchedChange { num } => 
                 Some(Event::WatchedUpdate { num }),
             Cmd::SendGift { action, user, medal_info, gift_name, gift_id, num, price, coin_type, total_coin } => 
-                Some(Event::Gift {user, fans_medal: medal_info, gift: Gift{ action, num, gift_name, gift_id, price, coin_type, coin_count:total_coin}}),
-
+                Some(Event::Gift {user, fans_medal: medal_filter(medal_info) , gift: Gift{ action, num, gift_name, gift_id, price, coin_type, coin_count:total_coin}}),
+            Cmd::HotRankChangedV2 { area_name, rank, rank_desc} => 
+                Some(Event::HotRankChanged {area: area_name, rank, description: rank_desc }),
+            Cmd::HotRankSettlementV2 { area_name, rank, uname, face } => 
+                Some(Event::HotRankSettlement { uname, face, area: area_name, rank}),
+            Cmd::GuardBuy { gift_id, gift_name, guard_level, price, num, uid, username} => 
+                Some(Event::GuardBuy{ level: guard_level, price, user: User{uname: username, uid, face:None}}),
             _ => {
                 None
             }

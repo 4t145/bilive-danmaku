@@ -1,0 +1,7 @@
+{
+  "cmd": "ONLINE_RANK_TOP3",
+  "data": {
+    "dmscore": 112,
+    "list": [{ "msg": "恭喜 <%盐焗果冻%> 成为高能榜", "rank": 1 }]
+  }
+}

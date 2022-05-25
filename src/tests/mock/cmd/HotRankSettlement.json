@@ -1,0 +1,15 @@
+{
+  "cmd": "HOT_RANK_SETTLEMENT",
+  "data": {
+    "area_name": "虚拟主播",
+    "cache_key": "1436ffc30d3cf02f2e107db32ef45cdb",
+    "dm_msg": "恭喜主播 <% MKiiiiii %> 荣登限时热门榜虚拟主播榜top7! 即将获得热门流量推荐哦！",
+    "dmscore": 144,
+    "face": "http://i1.hdslb.com/bfs/face/173e21f36f9de080bb679450896c7e9a6dad0a9f.jpg",
+    "icon": "https://i0.hdslb.com/bfs/live/63217712edb588864b2c714225992e7f46b0b917.png",
+    "rank": 7,
+    "timestamp": 1653465600,
+    "uname": "MKiiiiii",
+    "url": "https://live.bilibili.com/p/html/live-app-hotrank/result.html?is_live_half_webview=1&hybrid_half_ui=1,5,250,200,f4eefa,0,30,0,0,0;2,5,250,200,f4eefa,0,30,0,0,0;3,5,250,200,f4eefa,0,30,0,0,0;4,5,250,200,f4eefa,0,30,0,0,0;5,5,250,200,f4eefa,0,30,0,0,0;6,5,250,200,f4eefa,0,30,0,0,0;7,5,250,200,f4eefa,0,30,0,0,0;8,5,250,200,f4eefa,0,30,0,0,0&areaId=9&cache_key=1436ffc30d3cf02f2e107db32ef45cdb"
+  }
+}

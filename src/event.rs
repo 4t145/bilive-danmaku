@@ -16,6 +16,15 @@ pub enum Event {
         fans_medal: Option<FansMedal>,
         gift: Gift,
     },
+    GuardBuy {
+        level: u64,
+        price: u64,
+        user: User
+    },
+    // GiftCombo {
+    //     gift_type: GiftType,
+    //     fans_medal: Option<FansMedal>,
+    // },
     SuperChat {
         user: User,
         fans_medal: Option<FansMedal>,
@@ -31,5 +40,16 @@ pub enum Event {
     },
     GuardEnterRoom {
         user: User,
-    }
+    },
+    HotRankChanged {
+        area: String,
+        rank: u64,
+        description: String,
+    },
+    HotRankSettlement {
+        uname: String,
+        face: String,
+        area: String,
+        rank: u64,
+    },
 }

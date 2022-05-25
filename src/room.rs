@@ -6,20 +6,21 @@ use tokio_tungstenite::tungstenite as ws2;
 use futures_util::{StreamExt, SinkExt};
 
 use tokio::{sync::{mpsc, broadcast}, task::JoinHandle};
-
+#[derive(Debug)]
 pub struct Uninited;
-
+#[derive(Debug)]
 pub struct Disconnected {
     key: String,
     host_list: Vec<Host>,
 }
+#[derive(Debug)]
 pub struct Connected {
     fallback: Disconnected,
     broadcastor: broadcast::Sender<Event>,
     process_handle: JoinHandle<()>,
     conn_handle: RoomConnectionHandle
 }
-
+#[derive(Debug)]
 pub struct RoomService<S> {
     roomid: u64,
     status: S,
@@ -110,7 +111,8 @@ impl RoomService<Disconnected> {
                                             }
                                         }
                                         Err(_e) => {
-                                            // println!("无法反序列化:\n{}", e);
+                                            #[cfg(feature = "debug")]
+                                            println!("{}", _e);
                                         }
                                     }
                                 },
@@ -146,7 +148,7 @@ impl RoomService<Disconnected> {
 }
 
 impl RoomService<Connected> {
-    pub fn subscribe(&mut self) -> broadcast::Receiver<Event> {
+    pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.status.broadcastor.subscribe()
     }
 
@@ -214,10 +216,12 @@ pub enum ConnectError {
 }
 
 use crate::{types::*, RawPacket, event::Event};
+#[derive(Debug)]
 pub struct RoomConnection {
     pack_rx: mpsc::Receiver<RawPacket>,
     handle: RoomConnectionHandle
 }
+#[derive(Debug)]
 pub struct RoomConnectionHandle {
     send_handle: tokio::task::JoinHandle<()>,
     recv_handle: tokio::task::JoinHandle<()>,

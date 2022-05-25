@@ -51,7 +51,12 @@ pub struct Gift {
     pub price: u64,
 }
 
-
+#[derive(Clone, Debug, Deserialize)]
+pub struct GiftType {
+    pub action: String,
+    pub gift_name: String,
+    pub gift_id: u64,
+}
 
 #[derive(Clone, Debug)]
 pub enum DanmakuMessage {

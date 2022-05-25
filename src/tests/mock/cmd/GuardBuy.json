@@ -1,0 +1,14 @@
+{
+  "cmd": "GUARD_BUY",
+  "data": {
+    "end_time": 1653465224,
+    "gift_id": 10003,
+    "gift_name": "舰长",
+    "guard_level": 3,
+    "num": 1,
+    "price": 198000,
+    "start_time": 1653465224,
+    "uid": 3791285,
+    "username": "盐焗果冻"
+  }
+}
