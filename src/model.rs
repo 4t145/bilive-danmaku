@@ -10,7 +10,10 @@ pub struct Emoticon {
     pub width: u64,
     pub url: String
 }
-
+///
+/// # 说明
+/// - `guard_level`字段，1，2，3分别为总督，提督，舰长；0为无。
+/// - `anchor_roomid` 大航海房间id
 #[derive(Debug, Clone, Deserialize)]
 pub struct FansMedal {
     pub anchor_roomid: u64,
