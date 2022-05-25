@@ -154,6 +154,10 @@ impl Display for CmdDeserError {
 
 impl Cmd {
     pub fn deser(val: Value) -> Result<Self, CmdDeserError> {
+        #[cfg(feature="verbose")]
+        {
+            println!("{}", val.to_string());
+        };
         match &val["cmd"] {
             Value::String(cmd) => {
                 match cmd.as_str() {
@@ -174,11 +178,19 @@ impl Cmd {
                         let fans_medal = {
                             let medal_level = fans_medal[0].as_u64();
                             let medal_name = fans_medal[1].as_str();
-                            if medal_level.is_some() && medal_name.is_some() {
-                                let medal_level = medal_level.unwrap();
+                            let anchor_roomid = fans_medal[3].as_u64();
+                            let guard_level = fans_medal[10].as_u64();
+                            if let (
+                                Some(medal_level), 
+                                Some(medal_name), 
+                                Some(guard_level),
+                                Some(anchor_roomid),
+                            ) = (medal_level, medal_name, guard_level, anchor_roomid) {
                                 Some(FansMedal {
+                                    anchor_roomid,
+                                    guard_level, 
                                     medal_level,
-                                    medal_name: medal_name.unwrap().to_owned(),
+                                    medal_name: medal_name.to_owned(),
                                 })
                             } else {
                                 None

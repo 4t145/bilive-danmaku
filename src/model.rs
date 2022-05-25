@@ -13,9 +13,8 @@ pub struct Emoticon {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct FansMedal {
-    // pub anchor_roomid: u64,
-    // pub guard_level: u64,
-    // pub is_lighted: u8,
+    pub anchor_roomid: u64,
+    pub guard_level: u64,
     pub medal_level: u64,
     pub medal_name: String,
 }
