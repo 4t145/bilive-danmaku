@@ -21,10 +21,6 @@ pub enum Event {
         price: u64,
         user: User
     },
-    // GiftCombo {
-    //     gift_type: GiftType,
-    //     fans_medal: Option<FansMedal>,
-    // },
     SuperChat {
         user: User,
         fans_medal: Option<FansMedal>,

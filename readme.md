@@ -24,7 +24,10 @@ async fn service() {
 ```
 
 ## 已经支持的事件
+
+
 ```rust
+#[derive(Clone, Debug)]
 pub enum Event {
     Danmaku {
         message: DanmakuMessage,
@@ -39,6 +42,11 @@ pub enum Event {
         user: User,
         fans_medal: Option<FansMedal>,
         gift: Gift,
+    },
+    GuardBuy {
+        level: u64,
+        price: u64,
+        user: User
     },
     SuperChat {
         user: User,
@@ -55,6 +63,21 @@ pub enum Event {
     },
     GuardEnterRoom {
         user: User,
-    }
+    },
+    HotRankChanged {
+        area: String,
+        rank: u64,
+        description: String,
+    },
+    HotRankSettlement {
+        uname: String,
+        face: String,
+        area: String,
+        rank: u64,
+    },
 }
 ```
+可参考：
+- [命令原始数据](./src//tests/mock/cmd/)
+- [源文件](./src/event.rs)
+
