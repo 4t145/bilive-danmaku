@@ -1,13 +1,17 @@
 # bilive-danmaku
 这个库提供模拟bilibili直播的wss连接的功能，目前还在开发中
-
-## 使用例
+## 使用
+因为使用了尚未稳定的`split_array`，因此需要切换到nightly版本
+```
+rustup override set nightly
+```
+在`Cargo.toml`中加入
 ```toml
 bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
 ```
-
+使用
 ```rust
-use bilive_danmaku::{RoomService}
+use bilive_danmaku::{RoomService};
 
 
 async fn service() {
@@ -22,7 +26,11 @@ async fn service() {
     let service = service.close();
 }
 ```
-
+数据类型在`model`模块中, 事件类型在`event`模块中
+```rust
+use model::{User, FansMedal};
+use event::Event as BiliEvent;
+```
 ## 已经支持的事件
 
 
