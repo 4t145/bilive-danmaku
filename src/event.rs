@@ -49,3 +49,25 @@ pub enum Event {
         rank: u64,
     },
 }
+
+
+#[cfg(feature = "bincode")]
+impl Event {
+    pub fn to_bincode(&self) -> bincode::Result<Vec<u8>> {
+        bincode::serialize::<Self>(self)
+    }
+    pub fn from_bincode(bincode: &[u8]) -> bincode::Result<Self> {
+        bincode::deserialize(bincode)
+    }
+}
+
+#[cfg(feature = "json")]
+impl Event {
+    pub fn to_json(&self) -> serde_json::Result<String> {
+        serde_json::to_string(self)
+    }
+    
+    pub fn from_json(json: &str) -> serde_json::Result<Self> {
+        serde_json::from_str::<Self>(json)
+    }
+}
