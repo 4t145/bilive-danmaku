@@ -1,6 +1,6 @@
 use crate::model::*;
-
-#[derive(Clone, Debug)]
+use serde::{Serialize, Deserialize};
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Event {
     Danmaku {
         message: DanmakuMessage,

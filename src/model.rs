@@ -1,9 +1,9 @@
 
 use std::fmt::Display;
 
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Emoticon {
     pub unique_id: String,
     pub height: u64,
@@ -14,7 +14,7 @@ pub struct Emoticon {
 /// # 说明
 /// - `guard_level`字段，1，2，3分别为总督，提督，舰长；0为无。
 /// - `anchor_roomid` 大航海房间id
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FansMedal {
     pub anchor_roomid: u64,
     pub guard_level: u64,
@@ -22,27 +22,27 @@ pub struct FansMedal {
     pub medal_name: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct User {
     pub uid: u64,
     pub uname: String,
     pub face: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct SuperChatUser {
     pub(crate) uname: String,
     pub(crate) face: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CoinType {
     Silver,
     Gold
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Gift {
     pub coin_type:CoinType,
     pub coin_count: u64, 
@@ -53,14 +53,14 @@ pub struct Gift {
     pub price: u64,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GiftType {
     pub action: String,
     pub gift_name: String,
     pub gift_id: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum DanmakuMessage {
     Plain {
         message: String,

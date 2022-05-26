@@ -5,7 +5,7 @@ use tokio_tungstenite as tokio_ws2;
 use tokio_tungstenite::tungstenite as ws2;
 use futures_util::{StreamExt, SinkExt};
 
-use tokio::{sync::{mpsc, broadcast}, task::JoinHandle};
+use tokio::{sync::{mpsc, broadcast, Notify}, task::JoinHandle};
 #[derive(Debug)]
 pub struct Uninited;
 #[derive(Debug)]
@@ -17,6 +17,7 @@ pub struct Disconnected {
 pub struct Connected {
     fallback: Disconnected,
     broadcastor: broadcast::Sender<Event>,
+    // exception_flag: Notify,
     process_handle: JoinHandle<()>,
     conn_handle: RoomConnectionHandle
 }
@@ -93,6 +94,8 @@ impl RoomService<Disconnected> {
         let url = self.status.host_list[0].wss();
         match tokio_ws2::connect_async(url).await {
             Ok((stream, _)) => {
+                let exception_notify = Notify::const_new();
+                
                 let auth = crate::Auth::new( 0, self.roomid, Some(self.status.key.clone()));
                 let mut conn = RoomConnection::start(stream, auth).await.unwrap();
                 let (broadcastor, _) = broadcast::channel::<Event>(128);
@@ -134,6 +137,7 @@ impl RoomService<Disconnected> {
                     broadcastor,
                     conn_handle: conn.handle,
                     process_handle,
+                    // exception_flag: exception_notify,
                 };
                 Ok(RoomService {
                     roomid: self.roomid,
@@ -151,7 +155,6 @@ impl RoomService<Connected> {
     pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.status.broadcastor.subscribe()
     }
-
     pub fn close(self) -> RoomService<Disconnected> {
         self.status.process_handle.abort();
         self.status.conn_handle.hb_handle.abort();
