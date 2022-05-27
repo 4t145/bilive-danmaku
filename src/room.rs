@@ -5,7 +5,7 @@ use tokio_tungstenite as tokio_ws2;
 use tokio_tungstenite::tungstenite as ws2;
 use futures_util::{StreamExt, SinkExt};
 
-use tokio::{sync::{mpsc, broadcast, Notify}, task::JoinHandle};
+use tokio::{sync::{mpsc, broadcast}, task::JoinHandle};
 #[derive(Debug)]
 pub struct Uninited;
 #[derive(Debug)]
@@ -17,10 +17,11 @@ pub struct Disconnected {
 pub struct Connected {
     fallback: Disconnected,
     broadcastor: broadcast::Sender<Event>,
-    // exception_flag: Notify,
+    pub exception_watcher: mpsc::Receiver<Exception>,
     process_handle: JoinHandle<()>,
     conn_handle: RoomConnectionHandle
 }
+
 #[derive(Debug)]
 pub struct RoomService<S> {
     roomid: u64,
@@ -86,6 +87,10 @@ impl RoomService<Uninited> {
     }
 }
 
+#[derive(Debug)]
+pub enum Exception {
+    WsDisconnected,
+}
 impl RoomService<Disconnected> {
     pub async fn connect(self) -> Result<RoomService<Connected>, (Self, ConnectError)> {
         if self.status.host_list.is_empty() {
@@ -94,10 +99,9 @@ impl RoomService<Disconnected> {
         let url = self.status.host_list[0].wss();
         match tokio_ws2::connect_async(url).await {
             Ok((stream, _)) => {
-                let exception_notify = Notify::const_new();
-                
+                let (exception_repoter, exception_watcher) = mpsc::channel::<Exception>(4);
                 let auth = crate::Auth::new( 0, self.roomid, Some(self.status.key.clone()));
-                let mut conn = RoomConnection::start(stream, auth).await.unwrap();
+                let mut conn = RoomConnection::start(stream, auth, exception_repoter).await.unwrap();
                 let (broadcastor, _) = broadcast::channel::<Event>(128);
                 let process_packet_broadcastor = broadcastor.clone();
                 let process_packet = async move {
@@ -134,6 +138,7 @@ impl RoomService<Disconnected> {
                 let process_handle = tokio::spawn(process_packet);
                 let status = Connected {
                     fallback: self.status,
+                    exception_watcher,
                     broadcastor,
                     conn_handle: conn.handle,
                     process_handle,
@@ -155,6 +160,7 @@ impl RoomService<Connected> {
     pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.status.broadcastor.subscribe()
     }
+
     pub fn close(self) -> RoomService<Disconnected> {
         self.status.process_handle.abort();
         self.status.conn_handle.hb_handle.abort();
@@ -220,19 +226,20 @@ pub enum ConnectError {
 
 use crate::{types::*, RawPacket, event::Event};
 #[derive(Debug)]
-pub struct RoomConnection {
+struct RoomConnection {
     pack_rx: mpsc::Receiver<RawPacket>,
     handle: RoomConnectionHandle
 }
+
 #[derive(Debug)]
-pub struct RoomConnectionHandle {
+struct RoomConnectionHandle {
     send_handle: tokio::task::JoinHandle<()>,
     recv_handle: tokio::task::JoinHandle<()>,
     hb_handle: tokio::task::JoinHandle<()>,
 }
 
 impl RoomConnection {
-    async fn start(ws_stream: WsStream, auth: crate::Auth) -> Result<Self, ()> {
+    async fn start(ws_stream: WsStream, auth: crate::Auth, exception: mpsc::Sender<Exception>) -> Result<Self, ()> {
         use ws2::Message::*;
 
         let (mut tx, mut rx) = ws_stream.split();
@@ -248,6 +255,7 @@ impl RoomConnection {
 
         let hb_sender = pack_outbound_tx.clone();
 
+
         let hb = async move {
             use tokio::time::{sleep, Duration};
             loop {
@@ -255,14 +263,17 @@ impl RoomConnection {
                 sleep(Duration::from_secs(30)).await;
             }
         };
-
+        
+        let repoter = exception.clone();
         let send = async move {
             while let Some(p) = pack_outbound_rx.recv().await {
                 let bin= p.ser();
                 tx.send(Binary(bin)).await.unwrap_or_default();
             }
+            repoter.send(Exception::WsDisconnected).await.unwrap();
         };
 
+        let repoter = exception.clone();
         let recv = async move {
             while let Some(Ok(msg)) = rx.next().await {
                 match msg {
@@ -271,6 +282,7 @@ impl RoomConnection {
                         pack_inbound_tx.send(packet).await.unwrap_or_default();
                     },
                     Close(f) => {
+                        repoter.send(Exception::WsDisconnected).await.unwrap();
                         println!("{:?}",f);
                     },
                     _ => {
@@ -278,17 +290,16 @@ impl RoomConnection {
                     }
                 }
             }
+            repoter.send(Exception::WsDisconnected).await.unwrap();
         };
 
         let send_handle = tokio::spawn(send);
         let recv_handle = tokio::spawn(recv);
         let hb_handle = tokio::spawn(hb);
-
         Ok(RoomConnection{
             pack_rx: pack_inbound_rx,
             handle: RoomConnectionHandle { send_handle, recv_handle, hb_handle}
         })
     }
-
 }
 
