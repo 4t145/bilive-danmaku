@@ -1,6 +1,7 @@
 use crate::model::*;
 use serde::{Serialize, Deserialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "tag", content="data")]
 pub enum Event {
     Danmaku {
         message: DanmakuMessage,

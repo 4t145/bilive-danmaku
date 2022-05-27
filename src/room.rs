@@ -17,7 +17,7 @@ pub struct Disconnected {
 pub struct Connected {
     fallback: Disconnected,
     broadcastor: broadcast::Sender<Event>,
-    pub exception_watcher: mpsc::Receiver<Exception>,
+    exception_watcher: mpsc::Receiver<Exception>,
     process_handle: JoinHandle<()>,
     conn_handle: RoomConnectionHandle
 }
@@ -159,6 +159,10 @@ impl RoomService<Disconnected> {
 impl RoomService<Connected> {
     pub fn subscribe(&self) -> broadcast::Receiver<Event> {
         self.status.broadcastor.subscribe()
+    }
+
+    pub async fn exception(&mut self) -> Option<Exception> {
+        self.status.exception_watcher.recv().await
     }
 
     pub fn close(self) -> RoomService<Disconnected> {
