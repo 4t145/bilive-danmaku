@@ -61,6 +61,7 @@ pub struct GiftType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "tag", content="data")]
 pub enum DanmakuMessage {
     Plain {
         message: String,

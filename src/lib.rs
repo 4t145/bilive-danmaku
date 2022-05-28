@@ -34,7 +34,7 @@ mod tests;
 
 #[cfg(feature="connect")]
 mod connect {
-    pub use room::*;
+    pub use crate::room::*;
     use std::io::Write;
 
     fn write_u32_be(writer: &mut [u8], val: u32) -> &mut [u8] {
