@@ -6,6 +6,8 @@ use tokio_tungstenite::tungstenite as ws2;
 use futures_util::{StreamExt, SinkExt};
 
 use tokio::{sync::{mpsc, broadcast}, task::JoinHandle};
+
+use crate::connect::*;
 #[derive(Debug)]
 pub struct Uninited;
 #[derive(Debug)]
@@ -100,7 +102,7 @@ impl RoomService<Disconnected> {
         match tokio_ws2::connect_async(url).await {
             Ok((stream, _)) => {
                 let (exception_repoter, exception_watcher) = mpsc::channel::<Exception>(4);
-                let auth = crate::Auth::new( 0, self.roomid, Some(self.status.key.clone()));
+                let auth = Auth::new( 0, self.roomid, Some(self.status.key.clone()));
                 let mut conn = RoomConnection::start(stream, auth, exception_repoter).await.unwrap();
                 let (broadcastor, _) = broadcast::channel::<Event>(128);
                 let process_packet_broadcastor = broadcastor.clone();
@@ -108,7 +110,7 @@ impl RoomService<Disconnected> {
                     while let Some(packet) = conn.pack_rx.recv().await {
                         for data in packet.clone().get_datas() {
                             match data {
-                                crate::Data::Json(json_val) => {
+                                Data::Json(json_val) => {
                                     match crate::cmd::Cmd::deser(json_val) {
                                         Ok(cmd) => {
                                             if let Some(evt) = cmd.as_event() {
@@ -123,12 +125,12 @@ impl RoomService<Disconnected> {
                                         }
                                     }
                                 },
-                                crate::Data::Popularity(popularity) => {
+                                Data::Popularity(popularity) => {
                                     process_packet_broadcastor.send(
                                         Event::PopularityUpdate { popularity }
                                     ).unwrap_or_default();
                                 },
-                                crate::Data::Deflate(s) => {
+                                Data::Deflate(s) => {
                                     println!("deflate 压缩的消息（请报告此bug）: \n{}", s);
                                 },
                             }
@@ -228,7 +230,7 @@ pub enum ConnectError {
     WsError(String),
 }
 
-use crate::{types::*, RawPacket, event::Event};
+use crate::{types::*, event::Event};
 #[derive(Debug)]
 struct RoomConnection {
     pack_rx: mpsc::Receiver<RawPacket>,
@@ -243,11 +245,11 @@ struct RoomConnectionHandle {
 }
 
 impl RoomConnection {
-    async fn start(ws_stream: WsStream, auth: crate::Auth, exception: mpsc::Sender<Exception>) -> Result<Self, ()> {
+    async fn start(ws_stream: WsStream, auth: Auth, exception: mpsc::Sender<Exception>) -> Result<Self, ()> {
         use ws2::Message::*;
 
         let (mut tx, mut rx) = ws_stream.split();
-        let authpack_bin = RawPacket::build(crate::Operation::Auth, auth.ser()).ser();
+        let authpack_bin = RawPacket::build(Operation::Auth, auth.ser()).ser();
         tx.send(Binary(authpack_bin)).await.unwrap();
         let _auth_reply = match rx.next().await {
             Some(Ok(Binary(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
@@ -282,7 +284,7 @@ impl RoomConnection {
             while let Some(Ok(msg)) = rx.next().await {
                 match msg {
                     Binary(bin) => {                        
-                        let packet = crate::RawPacket::from_buffer(&bin);
+                        let packet = RawPacket::from_buffer(&bin);
                         pack_inbound_tx.send(packet).await.unwrap_or_default();
                     },
                     Close(f) => {
