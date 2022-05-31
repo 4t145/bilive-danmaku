@@ -4,6 +4,7 @@ use serde::{Serialize, Deserialize};
 #[serde(tag = "tag", content="data")]
 pub enum Event {
     Danmaku {
+        junk_flag: u64,
         message: DanmakuMessage,
         user: User,
         fans_medal: Option<FansMedal>

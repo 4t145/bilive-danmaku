@@ -73,6 +73,7 @@ pub(crate) enum Cmd {
         count: u64
     },
     DanmuMsg {
+        danmaku_type: u64,
         fans_medal: Option<FansMedal>,
         user: User,
         message: String,
@@ -174,6 +175,7 @@ impl Cmd {
                         let user = info[2].as_array().unwrap();
                         let uid = user[0].as_u64().unwrap();
                         let name = user[1].as_str().unwrap();
+                        let danmaku_type = info[0].as_array().unwrap()[10].as_u64().unwrap();
                         let fans_medal = &info[3];
                         let fans_medal = {
                             let medal_level = fans_medal[0].as_u64();
@@ -209,7 +211,10 @@ impl Cmd {
                         } else {
                             None
                         };
+                        // 是否为抽奖弹幕？
+
                         let res = Cmd::DanmuMsg {
+                            danmaku_type,
                             fans_medal,
                             user: User {
                                 uname: name.to_owned(),
@@ -244,9 +249,10 @@ impl Cmd {
                     user, 
                     fans_medal:medal_filter(fans_medal)
                 }),
-            Cmd::DanmuMsg { fans_medal, user, message ,emoticon} => {
+            Cmd::DanmuMsg { danmaku_type, fans_medal, user, message ,emoticon} => {
                 match emoticon {
                     Some(emoticon) =>  Some(Event::Danmaku { 
+                        junk_flag: danmaku_type, 
                         message: DanmakuMessage::Emoticon { 
                             alt_message:  message,
                             emoticon
@@ -256,6 +262,7 @@ impl Cmd {
                     }),
                     None => {
                         Some(Event::Danmaku { 
+                            junk_flag: danmaku_type,
                             message: DanmakuMessage::Plain { message }, 
                             user, 
                             fans_medal
