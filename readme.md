@@ -1,7 +1,7 @@
 # bilive-danmaku
 这个库提供模拟bilibili直播的wss连接的功能，目前还在开发中
-上一个发布的版本:
-https://github.com/4t145/bilive-danmaku/tree/ver-0.1.0
+
+上一个发布的版本:https://github.com/4t145/bilive-danmaku/tree/ver-0.1.0
 ## 使用
 因为使用了尚未稳定的`split_array`，因此需要切换到nightly版本
 ```
