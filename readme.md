@@ -1,5 +1,5 @@
 # bilive-danmaku
-这个库提供模拟bilibili直播的wss连接的功能，目前还在开发中
+这个库提供模拟bilibili直播的wss连接的功能，此readme是为`ver-0.1.0`准备的
 ## 使用
 因为使用了尚未稳定的`split_array`，因此需要切换到nightly版本
 ```
@@ -7,7 +7,7 @@ rustup override set nightly
 ```
 在`Cargo.toml`中加入
 ```toml
-bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
+bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "ver-0.1.0" }
 ```
 使用
 ```rust
