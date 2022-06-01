@@ -3,6 +3,12 @@
 
 上一个发布的版本:https://github.com/4t145/bilive-danmaku/tree/ver-0.1.0
 ## 使用
+### 通过websocket
+通过使用 https://github.com/4t145/rudanmaku-core
+
+这使你可以通过ws来获取事件，计划在未来支持ipc通讯（uds for linux，命名管道 for windows）
+
+### 作为库使用
 因为使用了尚未稳定的`split_array`，因此需要切换到nightly版本
 ```
 rustup override set nightly
