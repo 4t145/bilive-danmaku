@@ -16,22 +16,27 @@ rustup override set nightly
 在`Cargo.toml`中加入
 ```toml
 bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
+tokio = "^1.19.2"
 ```
 使用
 ```rust
-use bilive_danmaku::{RoomService};
+use bilive_danmaku::RoomService;
+use tokio;
 
-
-async fn service() {
-    let service = RoomService::new(477317922).init().await.unwrap();
+async fn start_bilive_service() {
+    let service = RoomService::new(22304341).init().await.unwrap();
     let service = service.connect().await.unwrap();
     // 这里会获得一个 broadcast::Reciever<Event>
     let mut events_rx = service.subscribe();
-    while let Some(evt) = events_rx.recv().await {
+    while let Ok(evt) = events_rx.recv().await {
         // 处理事件
-        todo!()
+        println!("{:?}", evt)
     }
-    let service = service.close();
+}
+
+#[tokio::main]
+async fn main() {
+    start_bilive_service().await;
 }
 ```
 
