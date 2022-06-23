@@ -20,23 +20,42 @@ tokio = "^1.19.2"
 ```
 使用
 ```rust
-use bilive_danmaku::RoomService;
-use tokio;
+use bilive_danmaku::{RoomService, event::Event};
 
-async fn start_bilive_service() {
-    let service = RoomService::new(22304341).init().await.unwrap();
-    let service = service.connect().await.unwrap();
-    // 这里会获得一个 broadcast::Reciever<Event>
-    let mut events_rx = service.subscribe();
-    while let Ok(evt) = events_rx.recv().await {
-        // 处理事件
-        println!("{:?}", evt)
+fn handle_evt(evt: Event) {
+    match evt {
+        Event::PopularityUpdate { popularity } => {
+            println!("当前人气值：{popularity}")
+        },
+        _ => {}
     }
 }
 
 #[tokio::main]
 async fn main() {
-    start_bilive_service().await;
+    let service = RoomService::new(21452505);
+    let service = service.init().await.unwrap();
+    let (mut service, fallback) = (service.connect().await.unwrap(), service);
+    let mut evt_rx = service.subscribe();
+    loop {
+        tokio::select! {
+            Ok(evt) = evt_rx.recv() => {
+                // 处理事件
+                handle_evt(evt)
+            }
+            Some(exception) = service.exception() => {
+                // 处理异常
+                println!("{exception:?}");
+                service.close();
+                service = fallback.connect().await.unwrap();
+                evt_rx = service.subscribe();
+            }
+            else => {
+                break;
+            }
+        }
+    }
+    service.close();
 }
 ```
 

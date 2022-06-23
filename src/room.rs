@@ -9,15 +9,20 @@ use tokio::{sync::{mpsc, broadcast}, task::JoinHandle};
 
 use crate::connect::*;
 #[derive(Debug, Clone)]
-pub struct Uninited;
+pub struct Uninited {
+    roomid: u64
+}
 #[derive(Debug, Clone)]
 pub struct Disconnected {
+    roomid: u64,
     key: String,
+    host_index: usize,
     host_list: Vec<Host>,
 }
 #[derive(Debug)]
 pub struct Connected {
-    fallback: Disconnected,
+    roomid: u64,
+    // fallback: Disconnected,
     broadcastor: broadcast::Sender<Event>,
     exception_watcher: mpsc::Receiver<Exception>,
     process_handle: JoinHandle<()>,
@@ -25,65 +30,67 @@ pub struct Connected {
 }
 
 #[derive(Debug)]
-pub struct RoomService<S> {
-    roomid: u64,
-    status: S,
-}
+pub struct RoomService<S> (S);
 
 impl RoomService<()> {
     pub fn new(roomid: u64) -> RoomService<Uninited> {
-        RoomService {
-            roomid,
-            status: Uninited{},
-        }
+        RoomService(Uninited{
+            roomid
+        })
     }
 }
 
+#[derive(Debug)]
+pub enum InitError {
+    ParseError,
+    HttpError
+}
+
 impl RoomService<Uninited> {
-    pub async fn init(mut self) -> Result<RoomService<Disconnected>, (Self, ())> {
-        let room_info_url = format!("https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}", self.roomid);
+    pub async fn init(&self) -> Result<RoomService<Disconnected>, InitError> {
+        let mut roomid = self.0.roomid;
+        let room_info_url = format!("https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}", roomid);
         match reqwest::get(room_info_url).await {
             Ok(resp) => {
                 if resp.status().is_success() {
                     if let Ok(body) = resp.text().await {
                         let response_json_body:RoomPlayInfo = serde_json::from_str(body.as_str()).unwrap();
                         if let Some(data) = response_json_body.data {
-                            self.roomid = data.room_id;
+                            roomid = data.room_id;
                         }
                     } else {
-                        return Err((self, ()))
+                        return Err(InitError::ParseError)
                     }
                 } else {
-                    return Err((self, ()))
+                    return Err(InitError::HttpError)
                 }
             }
             Err(_) => {
-                return Err((self, ()))
+                return Err(InitError::HttpError)
             },
         }
-        let url = format!("https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0", self.roomid);
+        let url = format!("https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0", roomid);
         match reqwest::get(url).await {
             Ok(resp) => {
                 if resp.status().is_success() {
                     if let Ok(body) = resp.text().await {
                         let response_json_body:Response = serde_json::from_str(body.as_str()).unwrap();
                         let status = Disconnected {
+                            host_index: 0,
+                            roomid,
                             key: response_json_body.data.token,
                             host_list: response_json_body.data.host_list
                         };
-                        Ok(RoomService {
-                            roomid: self.roomid,
-                            status
-                        })
+                        Ok(RoomService(status))
                     } else {
-                        Err((self, ()))
+                        Err(InitError::ParseError)
                     }
                 } else {
-                    Err((self, ()))
+                    Err(InitError::HttpError)
                 }
             }
             Err(_) => {
-                Err((self, ()))
+                Err(InitError::HttpError)
             },
         }
     }
@@ -95,19 +102,29 @@ pub enum Exception {
     WsDisconnected,
 }
 impl RoomService<Disconnected> {
-    pub async fn connect(self) -> Result<RoomService<Connected>, (Self, ConnectError)> {
-        if self.status.host_list.is_empty() {
-            return Err((self, ConnectError::HostListIsEmpty));
+
+    pub fn use_host(&mut self, index: usize) -> Result<&'_ str, usize> {
+        if self.0.host_list.len() > index {
+            self.0.host_index = index;
+            Ok(&self.0.host_list[index].host)
+        } else {
+            Err(self.0.host_list.len())
         }
-        let url = self.status.host_list[0].wss();
-        let roomid = self.roomid;
-        let status = self.status.clone();
+    }
+
+    pub async fn connect(&self) -> Result<RoomService<Connected>, ConnectError> {
+        if self.0.host_list.is_empty() {
+            return Err(ConnectError::HostListIsEmpty);
+        }
+        let url = self.0.host_list[self.0.host_index].wss();
+        let roomid = self.0.roomid;
+        let status = self.0.clone();
         match tokio_ws2::connect_async(url).await {
             Ok((stream, _)) => {
                 let (exception_repoter, exception_watcher) = mpsc::channel::<Exception>(4);
                 let auth = Auth::new( 0, roomid, Some(status.key.clone()));
                 let mut conn = RoomConnection::start(stream, auth, exception_repoter).await
-                .map_err(move |_|(RoomService {roomid, status}, ConnectError::FailToStart))?;
+                .map_err(move |_|ConnectError::HandshakeError)?;
                 let (broadcastor, _) = broadcast::channel::<Event>(128);
                 let process_packet_broadcastor = broadcastor.clone();
                 let process_packet = async move {
@@ -143,23 +160,17 @@ impl RoomService<Disconnected> {
                 };
                 let process_handle = tokio::spawn(process_packet);
                 let status = Connected {
-                    fallback: self.status,
+                    roomid,
                     exception_watcher,
                     broadcastor,
                     conn_handle: conn.handle,
                     process_handle,
                     // exception_flag: exception_notify,
                 };
-                Ok(RoomService {
-                    roomid,
-                    status
-                })
+                Ok(RoomService(status))
             }
             Err(e) => {
-                Err((RoomService {
-                    roomid,
-                    status
-                }, ConnectError::WsError(e.to_string())))
+                Err(ConnectError::WsError(e.to_string()))
             }
         }
     }
@@ -167,22 +178,18 @@ impl RoomService<Disconnected> {
 
 impl RoomService<Connected> {
     pub fn subscribe(&self) -> broadcast::Receiver<Event> {
-        self.status.broadcastor.subscribe()
+        self.0.broadcastor.subscribe()
     }
 
     pub async fn exception(&mut self) -> Option<Exception> {
-        self.status.exception_watcher.recv().await
+        self.0.exception_watcher.recv().await
     }
 
-    pub fn close(self) -> RoomService<Disconnected> {
-        self.status.process_handle.abort();
-        self.status.conn_handle.hb_handle.abort();
-        self.status.conn_handle.send_handle.abort();
-        self.status.conn_handle.recv_handle.abort();
-        RoomService{
-            roomid: self.roomid,
-            status: self.status.fallback,
-        }
+    pub fn close(self) {
+        self.0.process_handle.abort();
+        self.0.conn_handle.hb_handle.abort();
+        self.0.conn_handle.send_handle.abort();
+        self.0.conn_handle.recv_handle.abort();
     }
 }
 
@@ -234,7 +241,7 @@ impl Host {
 #[derive(Debug)]
 pub enum ConnectError {
     HostListIsEmpty,
-    FailToStart,
+    HandshakeError,
     WsError(String),
 }
 
