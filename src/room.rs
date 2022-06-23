@@ -8,9 +8,9 @@ use futures_util::{StreamExt, SinkExt};
 use tokio::{sync::{mpsc, broadcast}, task::JoinHandle};
 
 use crate::connect::*;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Uninited;
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Disconnected {
     key: String,
     host_list: Vec<Host>,
@@ -91,6 +91,7 @@ impl RoomService<Uninited> {
 
 #[derive(Debug)]
 pub enum Exception {
+    FailToAuth,
     WsDisconnected,
 }
 impl RoomService<Disconnected> {
@@ -99,11 +100,14 @@ impl RoomService<Disconnected> {
             return Err((self, ConnectError::HostListIsEmpty));
         }
         let url = self.status.host_list[0].wss();
+        let roomid = self.roomid;
+        let status = self.status.clone();
         match tokio_ws2::connect_async(url).await {
             Ok((stream, _)) => {
                 let (exception_repoter, exception_watcher) = mpsc::channel::<Exception>(4);
-                let auth = Auth::new( 0, self.roomid, Some(self.status.key.clone()));
-                let mut conn = RoomConnection::start(stream, auth, exception_repoter).await.unwrap();
+                let auth = Auth::new( 0, roomid, Some(status.key.clone()));
+                let mut conn = RoomConnection::start(stream, auth, exception_repoter).await
+                .map_err(move |_|(RoomService {roomid, status}, ConnectError::FailToStart))?;
                 let (broadcastor, _) = broadcast::channel::<Event>(128);
                 let process_packet_broadcastor = broadcastor.clone();
                 let process_packet = async move {
@@ -147,12 +151,15 @@ impl RoomService<Disconnected> {
                     // exception_flag: exception_notify,
                 };
                 Ok(RoomService {
-                    roomid: self.roomid,
+                    roomid,
                     status
                 })
             }
             Err(e) => {
-                Err((self, ConnectError::WsError(e.to_string())))
+                Err((RoomService {
+                    roomid,
+                    status
+                }, ConnectError::WsError(e.to_string())))
             }
         }
     }
@@ -210,7 +217,7 @@ struct ResponseData {
     host_list: Vec<Host>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Host {
     host: String,
     wss_port: u16,
@@ -227,6 +234,7 @@ impl Host {
 #[derive(Debug)]
 pub enum ConnectError {
     HostListIsEmpty,
+    FailToStart,
     WsError(String),
 }
 
@@ -253,7 +261,11 @@ impl RoomConnection {
         tx.send(Binary(authpack_bin)).await.unwrap();
         let _auth_reply = match rx.next().await {
             Some(Ok(Binary(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
-            _ => return Err(()),
+            other@_ => {
+                println!("{:?}", other);
+                exception.send(Exception::FailToAuth).await.unwrap();
+                return Err(())
+            },
         };
         let channel_buffer_size = 64;
         let (pack_outbound_tx, mut pack_outbound_rx) = mpsc::channel::<RawPacket>(channel_buffer_size);

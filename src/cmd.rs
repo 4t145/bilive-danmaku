@@ -5,6 +5,12 @@ pub struct OnlineRankTop3ListItem {
     msg: String,
     rank: u64
 }
+#[derive(Debug, serde::Deserialize)]
+pub struct BlindGiftInfo {
+    gift_action: String,
+    original_gift_id: u64,
+    original_gift_name: String 
+}
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(tag = "cmd", content="data", rename_all = "SCREAMING_SNAKE_CASE")]
@@ -91,7 +97,8 @@ pub(crate) enum Cmd {
         num: u64,
         price: u64,
         coin_type: CoinType,
-        total_coin: u64
+        total_coin: u64,
+        blind_gift: Option<BlindGiftInfo>
     },
     SuperChatMessage {
         medal_info: Option<FansMedal>,
@@ -276,8 +283,29 @@ impl Cmd {
                 Some(Event::SuperChat { user: User { uid, uname: user_info.uname, face: Some(user_info.face) }, fans_medal: medal_info, price, message, message_jpn: Some(message_jpn) }),
             Cmd::WatchedChange { num } => 
                 Some(Event::WatchedUpdate { num }),
-            Cmd::SendGift { action, user, medal_info, gift_name, gift_id, num, price, coin_type, total_coin } => 
-                Some(Event::Gift {user, fans_medal: medal_filter(medal_info) , gift: Gift{ action, num, gift_name, gift_id, price, coin_type, coin_count:total_coin}}),
+            Cmd::SendGift { action, user, medal_info, gift_name, 
+                gift_id, num, price, coin_type, total_coin, blind_gift
+            } => {
+                if let Some(blind_gift_info) = blind_gift {
+                    Some(Event::Gift {
+                        user, 
+                        fans_medal: medal_filter(medal_info) , 
+                        blindbox: Some(GiftType{
+                            action: blind_gift_info.gift_action,
+                            gift_id: blind_gift_info.original_gift_id,
+                            gift_name: blind_gift_info.original_gift_name
+                        }),
+                        gift: Gift{ action, num, gift_name, gift_id, price, coin_type, coin_count:total_coin}
+                    })
+                } else {
+                    Some(Event::Gift {
+                        user, 
+                        fans_medal: medal_filter(medal_info) , 
+                        blindbox: None,
+                        gift: Gift{ action, num, gift_name, gift_id, price, coin_type, coin_count:total_coin}
+                    })
+                }
+            }
             Cmd::HotRankChangedV2 { area_name, rank, rank_desc} => 
                 Some(Event::HotRankChanged {area: area_name, rank, description: rank_desc }),
             Cmd::HotRankSettlementV2 { area_name, rank, uname, face } => 

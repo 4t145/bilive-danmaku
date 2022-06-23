@@ -13,9 +13,16 @@ pub enum Event {
         user: User,
         fans_medal: Option<FansMedal>
     },
+    BlindboxGift {
+        user: User,
+        fans_medal: Option<FansMedal>,
+        blindbox_gift_type: GiftType,
+        gift: Gift,
+    },
     Gift {
         user: User,
         fans_medal: Option<FansMedal>,
+        blindbox: Option<GiftType>,
         gift: Gift,
     },
     GuardBuy {
