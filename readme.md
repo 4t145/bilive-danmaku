@@ -148,7 +148,7 @@ features = ["connect", "json"]
 
 ## JavaScript/TypeScript 支持
 ```bash
-npm install bilive-danmaku-json@0.1.0-rc4
+npm install bilive-danmaku-json@0.1.0-rc5
 ```
 ### 使用例
 ```TypeScript
