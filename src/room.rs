@@ -321,6 +321,7 @@ impl RoomConnection {
                         repoter.send(Exception::WsDisconnected(format!("{:?}", f))).await.unwrap();
                         break;
                     },
+                    Ping(_)|Pong(_) => {},
                     msg@_ => {
                         repoter.send(Exception::UnexpectedMessage(msg)).await.unwrap();
                     }
