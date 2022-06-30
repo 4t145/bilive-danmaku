@@ -99,7 +99,9 @@ impl RoomService<Uninited> {
 #[derive(Debug)]
 pub enum Exception {
     FailToAuth,
-    WsDisconnected,
+    UnexpectedMessage(ws2::Message),
+    WsSendError(String),
+    WsDisconnected(String),
 }
 impl RoomService<Disconnected> {
 
@@ -259,8 +261,14 @@ struct RoomConnectionHandle {
     hb_handle: tokio::task::JoinHandle<()>,
 }
 
+pub enum RoomConnectionError {
+    FailToAuth {
+        msg: String
+    }
+}
+
 impl RoomConnection {
-    async fn start(ws_stream: WsStream, auth: Auth, exception: mpsc::Sender<Exception>) -> Result<Self, ()> {
+    async fn start(ws_stream: WsStream, auth: Auth, exception: mpsc::Sender<Exception>) -> Result<Self, RoomConnectionError> {
         use ws2::Message::*;
 
         let (mut tx, mut rx) = ws_stream.split();
@@ -269,9 +277,8 @@ impl RoomConnection {
         let _auth_reply = match rx.next().await {
             Some(Ok(Binary(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
             other@_ => {
-                println!("{:?}", other);
                 exception.send(Exception::FailToAuth).await.unwrap();
-                return Err(())
+                return Err(RoomConnectionError::FailToAuth { msg: format!("{:?}", other) })
             },
         };
         let channel_buffer_size = 64;
@@ -293,9 +300,13 @@ impl RoomConnection {
         let send = async move {
             while let Some(p) = pack_outbound_rx.recv().await {
                 let bin= p.ser();
-                tx.send(Binary(bin)).await.unwrap_or_default();
+                match tx.send(Binary(bin)).await {
+                    Ok(_) => {},
+                    Err(e) => {
+                        repoter.send(Exception::WsSendError(e.to_string())).await.unwrap();
+                    }
+                }
             }
-            repoter.send(Exception::WsDisconnected).await.unwrap();
         };
 
         let repoter = exception.clone();
@@ -307,15 +318,14 @@ impl RoomConnection {
                         pack_inbound_tx.send(packet).await.unwrap_or_default();
                     },
                     Close(f) => {
-                        repoter.send(Exception::WsDisconnected).await.unwrap();
-                        println!("{:?}",f);
+                        repoter.send(Exception::WsDisconnected(format!("{:?}", f))).await.unwrap();
+                        break;
                     },
-                    _ => {
-
+                    msg@_ => {
+                        repoter.send(Exception::UnexpectedMessage(msg)).await.unwrap();
                     }
                 }
             }
-            repoter.send(Exception::WsDisconnected).await.unwrap();
         };
 
         let send_handle = tokio::spawn(send);
