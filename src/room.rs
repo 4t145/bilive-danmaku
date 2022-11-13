@@ -59,7 +59,7 @@ impl RoomService<Uninited> {
                 if resp.status().is_success() {
                     if let Ok(body) = resp.text().await {
                         let response_json_body: RoomPlayInfo =
-                            serde_json::from_str(body.as_str()).map_err(InitError::ParseError)?;
+                            serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
                         if let Some(data) = response_json_body.data {
                             roomid = data.room_id;
                         }
@@ -81,7 +81,7 @@ impl RoomService<Uninited> {
                 if resp.status().is_success() {
                     if let Ok(body) = resp.text().await {
                         let response_json_body: Response =
-                            serde_json::from_str(body.as_str()).map_err(InitError::ParseError)?;
+                            serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
                         let status = Disconnected {
                             host_index: 0,
                             roomid,

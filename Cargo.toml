@@ -20,6 +20,7 @@ optional = true
 
 [features]
 default = ["connect"]
+full = ["connect", "bincode", "deflate", "json"]
 connect = ["dep:tokio", "dep:futures-util", "dep:brotli", "dep:reqwest", "dep:tokio-tungstenite", "event"]
 bincode = ["dep:bincode"]
 deflate = ["dep:deflate", "connect"]

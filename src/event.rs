@@ -2,12 +2,6 @@ use crate::model::*;
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EventWithTime {
-    event: Event,
-    time: std::time::Instant
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "tag", content="data")]
 pub enum Event {
     Danmaku {
@@ -64,15 +58,6 @@ pub enum Event {
         area: String,
         rank: u64,
     },
-}
-
-impl Event {
-    pub fn wrap_time(self) -> EventWithTime {
-        EventWithTime {
-            event: self,
-            time: std::time::Instant::now()
-        }
-    }
 }
 
 #[cfg(feature = "bincode")]
