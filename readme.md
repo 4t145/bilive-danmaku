@@ -1,7 +1,10 @@
 # bilive-danmaku
 这个库提供模拟bilibili直播的wss连接的功能，目前还在开发中
 
+关于发送弹幕等主动api，可以看我这个仓库: https://github.com/4t145/bilibili-client
+
 上一个发布的版本:https://github.com/4t145/bilive-danmaku/tree/ver-0.1.0
+
 ## 使用
 ### 通过websocket
 通过使用 https://github.com/4t145/rudanmaku-core
