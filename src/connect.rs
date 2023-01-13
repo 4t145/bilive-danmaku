@@ -22,13 +22,33 @@ fn read_u16_be(buffer: &[u8]) -> (u16, &[u8]) {
     (u16::from_be_bytes(*read), tail)
 }
 
+struct Reader {
 
+}
 
 #[derive(Debug, Clone)]
 pub enum Data {
     Json(serde_json::Value),
     Popularity(u32),
     Deflate(String),
+}
+
+pub enum EventParseError {
+    CmdDeserError(CmdDeserError),
+    DeflateMessage
+}
+impl Data {
+    pub fn to_event(self) -> Result<Option<EventData>, EventParseError> {
+        let event = match self {
+            Data::Json(json_val) => match crate::cmd::Cmd::deser(json_val) {
+                Ok(cmd) => cmd.as_event(),
+                Err(e) => return Err(EventParseError::CmdDeserError(e))
+            },
+            Data::Popularity(popularity) => Some(EventData::PopularityUpdate { popularity }),
+            Data::Deflate(_) => return Err(EventParseError::DeflateMessage)
+        };
+        return Ok(event)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -212,7 +232,9 @@ pub enum Operation {
 }
 
 use serde::{Serialize};
-#[derive(Debug, Serialize)]
+
+use crate::{event::EventData, cmd::CmdDeserError};
+#[derive(Debug, Clone, Serialize)]
 pub struct Auth {
     uid: u64,
     roomid: u64,

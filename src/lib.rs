@@ -21,6 +21,8 @@
 #[cfg(feature="connect")]
 mod room;
 #[cfg(feature="connect")]
+mod ws;
+#[cfg(feature="connect")]
 pub use crate::room::*;
 
 #[cfg(feature="connect")]

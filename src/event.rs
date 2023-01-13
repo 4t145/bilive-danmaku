@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "tag", content="data")]
-pub enum Event {
+pub enum EventData {
     Danmaku {
         junk_flag: u64,
         message: DanmakuMessage,
@@ -60,8 +60,15 @@ pub enum Event {
     },
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Event {
+    #[serde(flatten)]
+    data: EventData,
+    timestamp: u64,
+}
+
 #[cfg(feature = "bincode")]
-impl Event {
+impl EventData {
     pub fn to_bincode(&self) -> bincode::Result<Vec<u8>> {
         bincode::serialize::<Self>(self)
     }
@@ -71,7 +78,7 @@ impl Event {
 }
 
 #[cfg(feature = "json")]
-impl Event {
+impl EventData {
     pub fn to_json(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
     }

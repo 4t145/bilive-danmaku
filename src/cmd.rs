@@ -121,7 +121,7 @@ use std::fmt::Display;
 
 use serde_json::Value;
 
-use crate::{model::*, event::Event};
+use crate::{model::*, event::EventData};
 
 fn medal_filter(fans_medal: Option<FansMedal>) -> Option<FansMedal> {
     match fans_medal {
@@ -249,16 +249,16 @@ impl Cmd {
         }
     }
 
-    pub fn as_event(self) -> Option<Event> {
+    pub fn as_event(self) -> Option<EventData> {
         match self {
             Cmd::InteractWord { fans_medal, user } 
-                => Some(Event::EnterRoom {
+                => Some(EventData::EnterRoom {
                     user, 
                     fans_medal:medal_filter(fans_medal)
                 }),
             Cmd::DanmuMsg { danmaku_type, fans_medal, user, message ,emoticon} => {
                 match emoticon {
-                    Some(emoticon) =>  Some(Event::Danmaku { 
+                    Some(emoticon) =>  Some(EventData::Danmaku { 
                         junk_flag: danmaku_type, 
                         message: DanmakuMessage::Emoticon { 
                             alt_message:  message,
@@ -268,7 +268,7 @@ impl Cmd {
                         fans_medal
                     }),
                     None => {
-                        Some(Event::Danmaku { 
+                        Some(EventData::Danmaku { 
                             junk_flag: danmaku_type,
                             message: DanmakuMessage::Plain { message }, 
                             user, 
@@ -278,16 +278,16 @@ impl Cmd {
                 }
             },
             Cmd::SuperChatMessage { uid, medal_info, message, price, user_info} => 
-                Some(Event::SuperChat { user: User { uid, uname: user_info.uname, face: Some(user_info.face) }, fans_medal: medal_info, price, message, message_jpn:None }),
+                Some(EventData::SuperChat { user: User { uid, uname: user_info.uname, face: Some(user_info.face) }, fans_medal: medal_info, price, message, message_jpn:None }),
             Cmd::SuperChatMessageJpn { uid, medal_info, message, price, user_info, message_jpn} => 
-                Some(Event::SuperChat { user: User { uid, uname: user_info.uname, face: Some(user_info.face) }, fans_medal: medal_info, price, message, message_jpn: Some(message_jpn) }),
+                Some(EventData::SuperChat { user: User { uid, uname: user_info.uname, face: Some(user_info.face) }, fans_medal: medal_info, price, message, message_jpn: Some(message_jpn) }),
             Cmd::WatchedChange { num } => 
-                Some(Event::WatchedUpdate { num }),
+                Some(EventData::WatchedUpdate { num }),
             Cmd::SendGift { action, user, medal_info, gift_name, 
                 gift_id, num, price, coin_type, total_coin, blind_gift
             } => {
                 if let Some(blind_gift_info) = blind_gift {
-                    Some(Event::Gift {
+                    Some(EventData::Gift {
                         user, 
                         fans_medal: medal_filter(medal_info) , 
                         blindbox: Some(GiftType{
@@ -298,7 +298,7 @@ impl Cmd {
                         gift: Gift{ action, num, gift_name, gift_id, price, coin_type, coin_count:total_coin}
                     })
                 } else {
-                    Some(Event::Gift {
+                    Some(EventData::Gift {
                         user, 
                         fans_medal: medal_filter(medal_info) , 
                         blindbox: None,
@@ -307,11 +307,11 @@ impl Cmd {
                 }
             }
             Cmd::HotRankChangedV2 { area_name, rank, rank_desc} => 
-                Some(Event::HotRankChanged {area: area_name, rank, description: rank_desc }),
+                Some(EventData::HotRankChanged {area: area_name, rank, description: rank_desc }),
             Cmd::HotRankSettlementV2 { area_name, rank, uname, face } => 
-                Some(Event::HotRankSettlement { uname, face, area: area_name, rank}),
+                Some(EventData::HotRankSettlement { uname, face, area: area_name, rank}),
             Cmd::GuardBuy { gift_id, gift_name, guard_level, price, num, uid, username} => 
-                Some(Event::GuardBuy{ level: guard_level, price, user: User{uname: username, uid, face:None}}),
+                Some(EventData::GuardBuy{ level: guard_level, price, user: User{uname: username, uid, face:None}}),
             _ => {
                 None
             }
