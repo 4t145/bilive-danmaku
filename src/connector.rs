@@ -1,14 +1,16 @@
 use async_trait::async_trait;
 use futures_util::{Stream, StreamExt};
 
-use crate::{packet::Auth, event::Event};
+use crate::{event::Event, packet::Auth};
 
+#[derive(Debug, Clone)]
 pub enum WsConnectError {
     FailToConnect,
     FailToSendAuth,
     FailToAuth,
 }
 
+#[derive(Debug, Clone)]
 pub enum EventStreamError {
     ConnectionClosed,
     WsError(String),
@@ -28,7 +30,6 @@ where
 #[cfg(feature = "rt_tokio")]
 pub use ws_tokio::TokioConnector;
 
-
 #[cfg(feature = "rt_tokio")]
 pub mod ws_tokio {
     use super::*;
@@ -37,9 +38,9 @@ pub mod ws_tokio {
     use std::collections::VecDeque;
     // use tungstenite;
     use crate::{
-        packet::{Auth, Operation, RawPacket},
-        event::Event,
         connector::WsConnectError,
+        event::Event,
+        packet::{Auth, Operation, RawPacket},
     };
     use tokio_tungstenite as tokio_ws2;
     use tokio_ws2::tungstenite as ws2;
@@ -114,12 +115,17 @@ pub mod ws_tokio {
                 }
             };
             let (mut tx, rx) = ws_stream.split();
-            // hb thread
+            // hb task
             let hb = async move {
-                tx.send(ws2::Message::Binary(RawPacket::heartbeat().ser()))
-                    .await
-                    .unwrap();
-                tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
+                use tokio::time::*;
+                // 30s 发送一次
+                let mut interval = interval(Duration::from_secs(30));
+                loop {
+                    interval.tick().await;
+                    tx.send(ws2::Message::Binary(RawPacket::heartbeat().ser()))
+                        .await
+                        .unwrap();
+                }
             };
             return Ok(TokioConnector {
                 ws_rx: rx,

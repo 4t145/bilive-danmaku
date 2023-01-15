@@ -73,8 +73,8 @@ impl Into<Event> for EventData {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
     #[serde(flatten)]
-    data: EventData,
-    timestamp: u64,
+    pub data: EventData,
+    pub timestamp: u64,
 }
 
 #[cfg(feature = "bincode")]
