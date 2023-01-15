@@ -38,8 +38,8 @@ pub enum EventParseError {
     DeflateMessage
 }
 impl Data {
-    pub fn to_event(self) -> Result<Option<EventData>, EventParseError> {
-        let event = match self {
+    pub fn to_event(self) -> Result<Option<Event>, EventParseError> {
+        let data = match self {
             Data::Json(json_val) => match crate::cmd::Cmd::deser(json_val) {
                 Ok(cmd) => cmd.as_event(),
                 Err(e) => return Err(EventParseError::CmdDeserError(e))
@@ -47,7 +47,7 @@ impl Data {
             Data::Popularity(popularity) => Some(EventData::PopularityUpdate { popularity }),
             Data::Deflate(_) => return Err(EventParseError::DeflateMessage)
         };
-        return Ok(event)
+        return Ok(data.map(Into::into))
     }
 }
 
@@ -233,7 +233,7 @@ pub enum Operation {
 
 use serde::{Serialize};
 
-use crate::{event::EventData, cmd::CmdDeserError};
+use crate::{event::{EventData, Event}, cmd::CmdDeserError};
 #[derive(Debug, Clone, Serialize)]
 pub struct Auth {
     uid: u64,

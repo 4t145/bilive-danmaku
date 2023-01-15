@@ -60,6 +60,16 @@ pub enum EventData {
     },
 }
 
+impl Into<Event> for EventData {
+    fn into(self) -> Event {
+        use std::time::*;
+        Event {
+            data: self,
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
     #[serde(flatten)]

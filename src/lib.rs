@@ -21,17 +21,16 @@
 #[cfg(feature="connect")]
 mod room;
 #[cfg(feature="connect")]
-mod ws;
+pub mod ws;
 #[cfg(feature="connect")]
 pub use crate::room::*;
-
 #[cfg(feature="connect")]
 pub(crate) mod cmd;
+
 #[cfg(feature="event")]
 pub mod model;
 #[cfg(feature="event")]
 pub mod event;
-pub(crate) mod types;
 
 #[cfg(test)]
 mod tests;

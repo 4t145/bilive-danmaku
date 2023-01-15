@@ -4,21 +4,15 @@ use serde::Deserialize;
 use crate::{connect::*, ws::*};
 
 #[derive(Debug, Clone)]
-pub struct Uninited {
+pub struct ConnectConfig {
     roomid: u64,
 }
 #[derive(Debug, Clone)]
-pub struct Disconnected {
+pub struct Connection {
     roomid: u64,
     key: String,
     host_index: usize,
     host_list: Vec<Host>,
-}
-
-impl Uninited {
-    pub fn new(roomid: u64) -> Uninited {
-        Uninited { roomid }
-    }
 }
 
 #[derive(Debug)]
@@ -28,9 +22,14 @@ pub enum InitError {
     DeserError(serde_json::Error),
 }
 
-impl Uninited {
-    pub async fn init(&self) -> Result<Disconnected, InitError> {
-        let mut roomid = self.roomid;
+#[derive(Debug)]
+pub enum Exception {
+    FailToAuth,
+    WsSendError(String),
+    WsDisconnected(String),
+}
+impl Connection {
+    pub async fn init(mut roomid: u64) -> Result<Self, InitError> {
         let room_info_url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}",
             roomid
@@ -63,7 +62,7 @@ impl Uninited {
                     if let Ok(body) = resp.body_string().await {
                         let response_json_body: Response =
                             serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
-                        let disconnected = Disconnected {
+                        let disconnected = Connection {
                             host_index: 0,
                             roomid,
                             key: response_json_body.data.token,
@@ -80,15 +79,7 @@ impl Uninited {
             Err(_) => Err(InitError::HttpError),
         }
     }
-}
 
-#[derive(Debug)]
-pub enum Exception {
-    FailToAuth,
-    WsSendError(String),
-    WsDisconnected(String),
-}
-impl Disconnected {
     pub fn use_host(&mut self, index: usize) -> Result<&'_ str, usize> {
         if self.host_list.len() > index {
             self.host_index = index;
@@ -98,7 +89,7 @@ impl Disconnected {
         }
     }
 
-    pub async fn connect<U: Unpacker>(&self) -> Result<U, ConnectError> {
+    pub async fn connect<C: Connector>(&self) -> Result<C, ConnectError> {
         if self.host_list.is_empty() {
             return Err(ConnectError::HostListIsEmpty);
         }
@@ -106,9 +97,8 @@ impl Disconnected {
         let roomid = self.roomid;
         let backup = self.clone();
         let auth = Auth::new(0, roomid, Some(backup.key.clone()));
-        let connection = U::Connection::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
-        let unpacker = U::unpack(connection);
-        return Ok(unpacker);
+        let stream = C::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
+        return Ok(stream);
     }
 }
 
