@@ -1,15 +1,14 @@
 use bilive_danmaku::Connection;
+use wasm_bindgen_futures::{spawn_local};
 use futures_util::StreamExt;
 fn main() {
-    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-    rt.block_on(tokio_main());
+    spawn_local(wasm_main());
 }
 
 
-async fn tokio_main() {
+async fn wasm_main() {
     let connection = Connection::init(21470454).await.unwrap();
     let mut stream = connection.connect().await.unwrap();
-    let start_time = tokio::time::Instant::now();
     while let Some(maybe_evt) = stream.next().await {
         match maybe_evt {
             Ok(evt) => {
@@ -20,7 +19,4 @@ async fn tokio_main() {
             },
         }
     }
-    let timespan = tokio::time::Instant::now().duration_since(start_time).as_secs();
-    println!("close after {timespan}");
-    stream.abort();
 }

@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+#![allow(dead_code)]
 
 #[derive(Debug, serde::Deserialize)]
 pub struct OnlineRankTop3ListItem {

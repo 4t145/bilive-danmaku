@@ -3,7 +3,7 @@
 
 关于发送弹幕等主动api，可以看我这个仓库: https://github.com/4t145/bilibili-client
 
-上一个发布的版本:https://github.com/4t145/bilive-danmaku/tree/ver-0.1.0
+上一个发布的版本:https://github.com/4t145/bilive-danmaku/tree/ver-0.1.1
 
 ## 使用
 ### 通过websocket
@@ -19,14 +19,17 @@ rustup override set nightly
 在`Cargo.toml`中加入
 ```toml
 bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
-tokio = "^1.19.2"
+tokio = "^1.24.1"
 ```
 使用
 ```rust
-use bilive_danmaku::{RoomService, event::Event};
+use bilive_danmaku::Connection;
+use bilive_danmaku::connector::{ TokioConnector, Connector };
+use futures_util::StreamExt;
+
 
 fn handle_evt(evt: Event) {
-    match evt {
+    match evt.data {
         Event::PopularityUpdate { popularity } => {
             println!("当前人气值：{popularity}")
         },
@@ -34,31 +37,20 @@ fn handle_evt(evt: Event) {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let service = RoomService::new(21452505);
-    let service = service.init().await.unwrap();
-    let (mut service, fallback) = (service.connect().await.unwrap(), service);
-    let mut evt_rx = service.subscribe();
-    loop {
-        tokio::select! {
-            Ok(evt) = evt_rx.recv() => {
-                // 处理事件
-                handle_evt(evt)
-            }
-            Some(exception) = service.exception() => {
-                // 处理异常
-                println!("{exception:?}");
-                service.close();
-                service = fallback.connect().await.unwrap();
-                evt_rx = service.subscribe();
-            }
-            else => {
-                break;
-            }
+async fn tokio_main() {
+    let connection = Connection::init(21470454).await.unwrap();
+    let mut stream = connection.connect::<TokioConnector>().await.unwrap();
+    while let Some(maybe_evt) = stream.next().await {
+        match maybe_evt {
+            Ok(evt) => {
+                handle_evt(evt);
+            },
+            Err(e) => {
+                dbg!(e);
+            },
         }
     }
-    service.close();
+    stream.abort();
 }
 ```
 

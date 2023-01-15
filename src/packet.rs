@@ -22,10 +22,6 @@ fn read_u16_be(buffer: &[u8]) -> (u16, &[u8]) {
     (u16::from_be_bytes(*read), tail)
 }
 
-struct Reader {
-
-}
-
 #[derive(Debug, Clone)]
 pub enum Data {
     Json(serde_json::Value),
@@ -210,6 +206,7 @@ impl RawPacket {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Operation {
     Handshake,

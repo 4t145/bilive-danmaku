@@ -16,7 +16,7 @@
 //!}
 //!```
 
-#![allow(dead_code)]
+// #![allow(dead_code)]
 #![feature(split_array)]
 #[cfg(feature="connect")]
 mod room;

@@ -4,10 +4,6 @@ use serde::Deserialize;
 use crate::{packet::*, connector::*};
 
 #[derive(Debug, Clone)]
-pub struct ConnectConfig {
-    roomid: u64,
-}
-#[derive(Debug, Clone)]
 pub struct Connection {
     roomid: u64,
     key: String,
@@ -89,7 +85,7 @@ impl Connection {
         }
     }
 
-    pub async fn connect<C: Connector>(&self) -> Result<C, ConnectError> {
+    pub async fn connect(&self) -> Result<Connector, ConnectError> {
         if self.host_list.is_empty() {
             return Err(ConnectError::HostListIsEmpty);
         }
@@ -97,7 +93,7 @@ impl Connection {
         let roomid = self.roomid;
         let backup = self.clone();
         let auth = Auth::new(0, roomid, Some(backup.key.clone()));
-        let stream = C::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
+        let stream = Connector::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
         return Ok(stream);
     }
 }
