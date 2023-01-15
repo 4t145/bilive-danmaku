@@ -1,7 +1,7 @@
 // #[allow(dead_code)]
 use serde::Deserialize;
 
-use crate::{connect::*, ws::*};
+use crate::{packet::*, connector::*};
 
 #[derive(Debug, Clone)]
 pub struct ConnectConfig {

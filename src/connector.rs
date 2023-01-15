@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use futures_util::{Stream, StreamExt};
 
-use crate::{connect::Auth, event::Event};
+use crate::{packet::Auth, event::Event};
 
 pub enum WsConnectError {
     FailToConnect,
@@ -37,9 +37,9 @@ pub mod ws_tokio {
     use std::collections::VecDeque;
     // use tungstenite;
     use crate::{
-        connect::{Auth, Operation, RawPacket},
+        packet::{Auth, Operation, RawPacket},
         event::Event,
-        ws::WsConnectError,
+        connector::WsConnectError,
     };
     use tokio_tungstenite as tokio_ws2;
     use tokio_ws2::tungstenite as ws2;
