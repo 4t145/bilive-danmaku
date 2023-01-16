@@ -5,10 +5,10 @@ use crate::{packet::*, connector::*};
 
 #[derive(Debug, Clone)]
 pub struct Connection {
-    roomid: u64,
-    key: String,
-    host_index: usize,
-    host_list: Vec<Host>,
+    pub roomid: u64,
+    pub key: String,
+    pub host_index: usize,
+    pub host_list: Vec<Host>,
 }
 
 #[derive(Debug)]
@@ -127,9 +127,9 @@ struct ResponseData {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-struct Host {
-    host: String,
-    wss_port: u16,
+pub struct Host {
+    pub host: String,
+    pub wss_port: u16,
 }
 
 impl Host {

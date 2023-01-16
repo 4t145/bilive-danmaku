@@ -97,3 +97,17 @@ impl EventData {
         serde_json::from_str::<Self>(json)
     }
 }
+
+#[cfg(feature = "rt_wasm")]
+impl Into<wasm_bindgen::JsValue> for Event {
+    fn into(self) -> wasm_bindgen::JsValue {
+        serde_wasm_bindgen::to_value(&self).unwrap()
+    }
+}
+
+#[cfg(feature = "rt_wasm")]
+impl wasm_bindgen::describe::WasmDescribe for Event {
+    fn describe() {
+        
+    }
+}
