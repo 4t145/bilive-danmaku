@@ -79,7 +79,7 @@ pub struct Event {
 }
 
 #[cfg(feature = "bincode")]
-impl EventData {
+impl Event {
     pub fn to_bincode(&self) -> bincode::Result<Vec<u8>> {
         bincode::serialize::<Self>(self)
     }
@@ -89,7 +89,7 @@ impl EventData {
 }
 
 #[cfg(feature = "json")]
-impl EventData {
+impl Event {
     pub fn to_json(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
     }
