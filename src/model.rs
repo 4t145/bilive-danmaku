@@ -3,6 +3,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Emoticon {
     pub unique_id: String,

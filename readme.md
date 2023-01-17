@@ -3,8 +3,6 @@
 
 关于发送弹幕等主动api，可以看我这个仓库: https://github.com/4t145/bilibili-client
 
-上一个发布的版本:https://github.com/4t145/bilive-danmaku/tree/ver-0.1.1
-
 ## 使用
 ### 通过websocket
 通过使用 https://github.com/4t145/rudanmaku-core
@@ -23,10 +21,8 @@ tokio = "^1.24.1"
 ```
 使用
 ```rust
-use bilive_danmaku::Connection;
-use bilive_danmaku::connector::{ TokioConnector, Connector };
+use bilive_danmaku::Connector;
 use futures_util::StreamExt;
-
 
 fn handle_evt(evt: Event) {
     match evt.data {
@@ -38,8 +34,8 @@ fn handle_evt(evt: Event) {
 }
 
 async fn tokio_main() {
-    let connection = Connection::init(21470454).await.unwrap();
-    let mut stream = connection.connect::<TokioConnector>().await.unwrap();
+    let connector = Connector::init(851181).await.unwrap();
+    let mut stream = connector.connect().await.unwrap();
     while let Some(maybe_evt) = stream.next().await {
         match maybe_evt {
             Ok(evt) => {
@@ -65,12 +61,9 @@ use event::Event as BiliEvent;
 ```rust
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "tag", content="data")]
-pub enum Event {
+pub enum EventData {
     Danmaku {
-        // junk_flag=0 才是正常弹幕（非抽奖/天选等）
-        // 抽奖，天选，junk_flag = 2
-        // 其他值不知道有什么意义，所以暂且保留这个字段为u64
-        junk_flag: u64,
+        flag: u64,
         message: DanmakuMessage,
         user: User,
         fans_medal: Option<FansMedal>
@@ -125,7 +118,8 @@ pub enum Event {
 ## feature flag
 |flag|功能|
 |:---:|:--:|
-|`connect`|连接直播间，默认启用|
+|`rt_tokio`|使用tokio连接直播间，默认启用|
+|`rt_wasm`|运行在wasm直播间|
 |`event`|只启用model和event，不包含连接|
 |`bincode`|启用bincode正反序列化|
 |`json`|启用json正反序列化|
@@ -133,12 +127,12 @@ pub enum Event {
 |`debug`|debug用，输出解析错误|
 
 
-默认只启用`connect`
+默认只启用`rt_tokio`
 比如你想把收到的消息序列化为json格式，启用
 ```toml
 [dependencies.bilive-danmaku]
 # ****
-features = ["connect", "json"]
+features = ["rt_tokio", "json"]
 ```
 
 ## JavaScript/TypeScript 支持

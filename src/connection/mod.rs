@@ -23,11 +23,11 @@ pub enum EventStreamError {
 // }
 
 #[cfg(feature = "rt_tokio")]
-mod tokio_connector;
+mod tokio_connection;
 #[cfg(feature = "rt_tokio")]
-pub use tokio_connector::TokioConnector as Connector;
+pub use tokio_connection::TokioConnection as Connection;
 
 #[cfg(feature = "rt_wasm")]
 mod wasm_connector;
 #[cfg(feature = "rt_wasm")]
-pub use wasm_connector::WasmConnector as Connector;
+pub use wasm_connection::WasmConnection as Connection;

@@ -25,9 +25,7 @@ pub(crate) enum Cmd {
         user: User,
     },
     CommonNoticeDanmaku{},
-    EntryEffect{
-
-    },
+    EntryEffect{},
     GuardBuy {
         gift_id: u64,
         gift_name: String,
@@ -260,7 +258,7 @@ impl Cmd {
             Cmd::DanmuMsg { danmaku_type, fans_medal, user, message ,emoticon} => {
                 match emoticon {
                     Some(emoticon) =>  Some(EventData::Danmaku { 
-                        junk_flag: danmaku_type, 
+                        flag: danmaku_type, 
                         message: DanmakuMessage::Emoticon { 
                             alt_message:  message,
                             emoticon
@@ -270,7 +268,7 @@ impl Cmd {
                     }),
                     None => {
                         Some(EventData::Danmaku { 
-                            junk_flag: danmaku_type,
+                            flag: danmaku_type,
                             message: DanmakuMessage::Plain { message }, 
                             user, 
                             fans_medal

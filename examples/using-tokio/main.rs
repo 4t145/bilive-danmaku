@@ -1,4 +1,4 @@
-use bilive_danmaku::Connection;
+use bilive_danmaku::Connector;
 use futures_util::StreamExt;
 fn main() {
     let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
@@ -7,9 +7,8 @@ fn main() {
 
 
 async fn tokio_main() {
-    let connection = Connection::init(21470454).await.unwrap();
-    let mut stream = connection.connect().await.unwrap();
-    let start_time = tokio::time::Instant::now();
+    let connector = Connector::init(22470216).await.unwrap();
+    let mut stream = connector.connect().await.unwrap();
     while let Some(maybe_evt) = stream.next().await {
         match maybe_evt {
             Ok(evt) => {
@@ -20,7 +19,5 @@ async fn tokio_main() {
             },
         }
     }
-    let timespan = tokio::time::Instant::now().duration_since(start_time).as_secs();
-    println!("close after {timespan}");
     stream.abort();
 }

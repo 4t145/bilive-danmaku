@@ -1,10 +1,9 @@
 use super::*;
-use async_trait::async_trait;
 use futures_util::{stream::SplitStream, SinkExt, Stream, StreamExt};
 use std::collections::VecDeque;
 // use tungstenite;
 use crate::{
-    connector::WsConnectError,
+    connection::WsConnectError,
     event::Event,
     packet::{Auth, Operation, RawPacket},
 };
@@ -13,12 +12,12 @@ use tokio_ws2::tungstenite as ws2;
 type WsStream = tokio_ws2::WebSocketStream<tokio_ws2::MaybeTlsStream<tokio::net::TcpStream>>;
 type WsRx = SplitStream<WsStream>;
 
-pub struct TokioConnector {
+pub struct TokioConnection {
     ws_rx: WsRx,
     hb_handle: tokio::task::JoinHandle<()>,
     buffer: VecDeque<Result<Event, EventStreamError>>, // rx_handle: tokio::task::JoinHandle<()>,
 }
-impl Stream for TokioConnector {
+impl Stream for TokioConnection {
     type Item = Result<Event, EventStreamError>;
 
     fn poll_next(
@@ -57,7 +56,7 @@ impl Stream for TokioConnector {
     }
 }
 
-impl TokioConnector {
+impl TokioConnection {
     pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
         use ws2::Message::*;
         let conn_result = tokio_ws2::connect_async(url).await;
@@ -93,7 +92,7 @@ impl TokioConnector {
                     .unwrap();
             }
         };
-        return Ok(TokioConnector {
+        return Ok(TokioConnection {
             ws_rx: rx,
             hb_handle: tokio::spawn(hb),
             buffer: VecDeque::with_capacity(256),

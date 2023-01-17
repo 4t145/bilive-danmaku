@@ -5,7 +5,8 @@ use serde::{Serialize, Deserialize};
 #[serde(tag = "tag", content="data")]
 pub enum EventData {
     Danmaku {
-        junk_flag: u64,
+        /// 第一位：是否是抽奖弹幕，2~4位，舰长类型
+        flag: u64,
         message: DanmakuMessage,
         user: User,
         fans_medal: Option<FansMedal>

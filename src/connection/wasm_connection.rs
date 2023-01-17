@@ -17,13 +17,13 @@ use wasm_bindgen_futures::{future_to_promise};
 // type WsStream = tokio_ws2::WebSocketStream<tokio_ws2::MaybeTlsStream<tokio::net::TcpStream>>;
 type WsRx = SplitStream<WebSocket>;
 
-pub struct WasmConnector {
+pub struct WasmConnection {
     ws_rx: WsRx,
     pub hb_handle: Promise,
     buffer: VecDeque<Result<Event, EventStreamError>>, // rx_handle: tokio::task::JoinHandle<()>,
 }
 
-impl Stream for WasmConnector {
+impl Stream for WasmConnection {
     type Item = Result<Event, EventStreamError>;
 
     fn poll_next(
@@ -62,7 +62,7 @@ impl Stream for WasmConnector {
         }
     }
 }
-impl WasmConnector {
+impl WasmConnection {
     pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
         use gloo_net::websocket::{ Message::*};
         let conn_result = WebSocket::open(url.as_str());
@@ -96,7 +96,7 @@ impl WasmConnector {
             }
         };
         // let hb = spawn_local();
-        return Ok(WasmConnector {
+        return Ok(WasmConnection {
             ws_rx: rx,
             hb_handle: future_to_promise(hb),
             buffer: VecDeque::with_capacity(256),

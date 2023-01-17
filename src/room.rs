@@ -1,10 +1,10 @@
 // #[allow(dead_code)]
 use serde::Deserialize;
 
-use crate::{packet::*, connector::*};
+use crate::{packet::*, connection::*};
 
 #[derive(Debug, Clone)]
-pub struct Connection {
+pub struct Connector {
     pub roomid: u64,
     pub key: String,
     pub host_index: usize,
@@ -24,7 +24,7 @@ pub enum Exception {
     WsSendError(String),
     WsDisconnected(String),
 }
-impl Connection {
+impl Connector {
     pub async fn init(mut roomid: u64) -> Result<Self, InitError> {
         let room_info_url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}",
@@ -58,7 +58,7 @@ impl Connection {
                     if let Ok(body) = resp.body_string().await {
                         let response_json_body: Response =
                             serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
-                        let disconnected = Connection {
+                        let disconnected = Connector {
                             host_index: 0,
                             roomid,
                             key: response_json_body.data.token,
@@ -85,7 +85,7 @@ impl Connection {
         }
     }
 
-    pub async fn connect(&self) -> Result<Connector, ConnectError> {
+    pub async fn connect(&self) -> Result<Connection, ConnectError> {
         if self.host_list.is_empty() {
             return Err(ConnectError::HostListIsEmpty);
         }
@@ -93,7 +93,7 @@ impl Connection {
         let roomid = self.roomid;
         let backup = self.clone();
         let auth = Auth::new(0, roomid, Some(backup.key.clone()));
-        let stream = Connector::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
+        let stream = Connection::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
         return Ok(stream);
     }
 }
