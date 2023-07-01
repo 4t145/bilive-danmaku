@@ -6,14 +6,13 @@ use gloo_timers::future::IntervalStream;
 use js_sys::Promise;
 use std::collections::VecDeque;
 
-
 // use tungstenite;
 use crate::{
     connector::WsConnectError,
     event::Event,
     packet::{Auth, Operation, RawPacket},
 };
-use wasm_bindgen_futures::{future_to_promise};
+use wasm_bindgen_futures::future_to_promise;
 // type WsStream = tokio_ws2::WebSocketStream<tokio_ws2::MaybeTlsStream<tokio::net::TcpStream>>;
 type WsRx = SplitStream<WebSocket>;
 
@@ -64,7 +63,7 @@ impl Stream for WasmConnection {
 }
 impl WasmConnection {
     pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
-        use gloo_net::websocket::{ Message::*};
+        use gloo_net::websocket::Message::*;
         let conn_result = WebSocket::open(url.as_str());
         let ws_stream = match conn_result {
             Ok(stream) => stream,
@@ -72,7 +71,7 @@ impl WasmConnection {
                 return Err(WsConnectError::FailToConnect);
             }
         };
-    
+
         let (mut tx, mut rx) = ws_stream.split();
         let authpack_bin = RawPacket::build(Operation::Auth, auth.ser()).ser();
         tx.send(Bytes(authpack_bin))

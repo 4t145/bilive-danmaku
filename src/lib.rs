@@ -1,6 +1,6 @@
 //! # 使用
-//! 
-//! 
+//!
+//!
 //!```
 //!use bilive_danmaku::{RoomService}
 //!async fn service() {
@@ -19,24 +19,24 @@
 // #![allow(dead_code)]
 #![deny(clippy::unwrap_used, clippy::print_stdout, clippy::panic)]
 #![feature(split_array)]
-#[cfg(feature="connect")]
-mod room;
-#[cfg(feature="connect")]
+#[cfg(feature = "connect")]
 pub mod connection;
-#[cfg(feature="connect")]
-pub use connection::Connection;
-#[cfg(feature="connect")]
+#[cfg(feature = "connect")]
+mod room;
+#[cfg(feature = "connect")]
 pub use crate::room::*;
-#[cfg(feature="connect")]
+#[cfg(feature = "connect")]
+pub use connection::Connection;
+#[cfg(feature = "connect")]
 pub(crate) mod cmd;
 
-#[cfg(feature="event")]
-pub mod model;
-#[cfg(feature="event")]
+#[cfg(feature = "event")]
 pub mod event;
+#[cfg(feature = "event")]
+pub mod model;
 
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature="connect")]
+#[cfg(feature = "connect")]
 mod packet;

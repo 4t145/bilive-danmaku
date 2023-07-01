@@ -1,15 +1,13 @@
-
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Emoticon {
     pub unique_id: String,
     pub height: u64,
     pub width: u64,
-    pub url: String
+    pub url: String,
 }
 ///
 /// # 说明
@@ -36,17 +34,17 @@ pub(crate) struct SuperChatUser {
     pub(crate) face: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CoinType {
     Silver,
-    Gold
+    Gold,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Gift {
-    pub coin_type:CoinType,
-    pub coin_count: u64, 
+    pub coin_type: CoinType,
+    pub coin_count: u64,
     pub action: String,
     pub gift_name: String,
     pub gift_id: u64,
@@ -62,7 +60,7 @@ pub struct GiftType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(tag = "tag", content="data")]
+#[serde(tag = "tag", content = "data")]
 pub enum DanmakuMessage {
     Plain {
         message: String,
@@ -70,7 +68,7 @@ pub enum DanmakuMessage {
     Emoticon {
         emoticon: Emoticon,
         alt_message: String,
-    }
+    },
 }
 
 impl Display for FansMedal {
@@ -83,13 +81,22 @@ impl Display for DanmakuMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DanmakuMessage::Plain { message } => f.write_str(message),
-            DanmakuMessage::Emoticon { emoticon:_, alt_message } => f.write_fmt(format_args!("[表情:{}]", alt_message)),
+            DanmakuMessage::Emoticon {
+                emoticon: _,
+                alt_message,
+            } => f.write_fmt(format_args!("[表情:{}]", alt_message)),
         }
     }
 }
 
 impl Display for Gift {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}{}x{}[{:.2}CNY]", self.action, self.gift_name, self.num, ((self.price*self.num) as f32)/1000.0))
+        f.write_fmt(format_args!(
+            "{}{}x{}[{:.2}CNY]",
+            self.action,
+            self.gift_name,
+            self.num,
+            ((self.price * self.num) as f32) / 1000.0
+        ))
     }
 }

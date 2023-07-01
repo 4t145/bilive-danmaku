@@ -37,9 +37,7 @@ impl Stream for TokioConnection {
                 for data in packet.get_datas() {
                     match data.into_event() {
                         Ok(Some(event)) => self.buffer.push_back(Ok(event)),
-                        Ok(None) => {
-                            
-                        }
+                        Ok(None) => {}
                         Err(e) => {
                             log::error!("解析数据包失败：{}", e);
                         }
@@ -53,9 +51,7 @@ impl Stream for TokioConnection {
             // 错误
             Ready(Some(Err(e))) => Ready(Some(Err(WsError(e.to_string())))),
             // 接受到None
-            Ready(None) => {
-                Ready(None)
-            }
+            Ready(None) => Ready(None),
             Pending => Pending,
         }
     }
@@ -109,4 +105,3 @@ impl TokioConnection {
     }
 }
 // 动物化的后现代
-

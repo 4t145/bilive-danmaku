@@ -1,7 +1,7 @@
 // #[allow(dead_code)]
 use serde::Deserialize;
 
-use crate::{packet::*, connection::*};
+use crate::{connection::*, packet::*};
 
 #[derive(Debug, Clone)]
 pub struct Connector {
@@ -93,7 +93,9 @@ impl Connector {
         let roomid = self.roomid;
         let backup = self.clone();
         let auth = Auth::new(0, roomid, Some(backup.key.clone()));
-        let stream = Connection::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
+        let stream = Connection::connect(url, auth)
+            .await
+            .map_err(|_| ConnectError::HandshakeError)?;
         Ok(stream)
     }
 }

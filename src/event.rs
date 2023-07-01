@@ -1,60 +1,88 @@
 use crate::model::*;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "tag", content="data")]
-pub enum EventData {
-    Danmaku {
+macro_rules! define_event {
+    ($(
+        $name:ident{$(
+            $(#[$attrs:meta])*
+            $arg:ident: $ty:ty
+        ),*$(,)?}
+    ),*$(,)?) => {
+        #[derive(Clone, Debug, Serialize, Deserialize)]
+        #[serde(tag = "cmd", content="data")]
+        pub enum EventData {
+            $($name ($name)),*
+        }
+
+        $(
+            #[derive(Clone, Debug, Serialize, Deserialize)]
+            pub struct $name {
+                $(
+                    $(#[$attrs])*
+                    pub $arg: $ty
+                ),*
+            }
+            impl From<$name> for EventData {
+                fn from(event: $name) -> Self {
+                    EventData::$name(event)
+                }
+            }
+        )*
+    };
+}
+
+define_event! {
+    DanmakuEvent {
         /// 第一位：是否是抽奖弹幕，2~4位，舰长类型
         flag: u64,
         message: DanmakuMessage,
         user: User,
         fans_medal: Option<FansMedal>
     },
-    EnterRoom {
+    EnterRoomEvent {
         user: User,
         fans_medal: Option<FansMedal>
     },
-    BlindboxGift {
+    BlindboxGiftEvent {
         user: User,
         fans_medal: Option<FansMedal>,
         blindbox_gift_type: GiftType,
         gift: Gift,
     },
-    Gift {
+    GiftEvent {
         user: User,
         fans_medal: Option<FansMedal>,
         blindbox: Option<GiftType>,
         gift: Gift,
     },
-    GuardBuy {
+    GuardBuyEvent {
         level: u64,
         price: u64,
         user: User
     },
-    SuperChat {
+    SuperChatEvent {
         user: User,
         fans_medal: Option<FansMedal>,
-        price: u64, 
+        price: u64,
         message: String,
         message_jpn: Option<String>
     },
-    WatchedUpdate {
+    WatchedUpdateEvent {
         num: u64
     },
-    PopularityUpdate {
+    PopularityUpdateEvent {
         popularity: u32,
     },
-    GuardEnterRoom {
+    GuardEnterRoomEvent {
         user: User,
     },
-    HotRankChanged {
+    HotRankChangedEvent {
         area: String,
         rank: u64,
         description: String,
     },
-    HotRankSettlement {
+    HotRankSettlementEvent {
         uname: String,
         face: String,
         area: String,
@@ -67,7 +95,10 @@ impl From<EventData> for Event {
         use std::time::*;
         Event {
             data: val,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).expect("时间倒流").as_millis() as u64
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("时间倒流")
+                .as_millis() as u64,
         }
     }
 }
@@ -94,7 +125,7 @@ impl Event {
     pub fn to_json(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
     }
-    
+
     pub fn from_json(json: &str) -> serde_json::Result<Self> {
         serde_json::from_str::<Self>(json)
     }
@@ -109,7 +140,5 @@ impl Into<wasm_bindgen::JsValue> for Event {
 
 #[cfg(feature = "rt_wasm")]
 impl wasm_bindgen::describe::WasmDescribe for Event {
-    fn describe() {
-        
-    }
+    fn describe() {}
 }

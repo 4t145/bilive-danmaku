@@ -28,6 +28,6 @@ mod tokio_connection;
 pub use tokio_connection::TokioConnection as Connection;
 
 #[cfg(feature = "rt_wasm")]
-mod wasm_connector;
+mod wasm_connection;
 #[cfg(feature = "rt_wasm")]
 pub use wasm_connection::WasmConnection as Connection;

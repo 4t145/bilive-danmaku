@@ -1,4 +1,4 @@
-use std::{io::Write, fmt::Display};
+use std::{fmt::Display, io::Write};
 
 fn write_u32_be(writer: &mut [u8], val: u32) -> &mut [u8] {
     let (write, writer) = writer.split_array_mut::<4>();
@@ -31,14 +31,14 @@ pub enum Data {
 
 pub enum EventParseError {
     CmdDeserError(CmdDeserError),
-    DeflateMessage
+    DeflateMessage,
 }
 
 impl Display for EventParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             EventParseError::CmdDeserError(e) => write!(f, "CmdDeserError: {}", e),
-            EventParseError::DeflateMessage => write!(f, "DeflateMessage")
+            EventParseError::DeflateMessage => write!(f, "DeflateMessage"),
         }
     }
 }
@@ -48,10 +48,10 @@ impl Data {
         let data = match self {
             Data::Json(json_val) => match crate::cmd::Cmd::deser(json_val) {
                 Ok(cmd) => cmd.into_event(),
-                Err(e) => return Err(EventParseError::CmdDeserError(e))
+                Err(e) => return Err(EventParseError::CmdDeserError(e)),
             },
-            Data::Popularity(popularity) => Some(EventData::PopularityUpdate { popularity }),
-            Data::Deflate(_) => return Err(EventParseError::DeflateMessage)
+            Data::Popularity(popularity) => Some(PopularityUpdateEvent { popularity }.into()),
+            Data::Deflate(_) => return Err(EventParseError::DeflateMessage),
         };
         Ok(data.map(Into::into))
     }
@@ -73,7 +73,7 @@ struct RawPacketData(Vec<u8>);
 #[derive(Debug, Clone)]
 pub struct RawPacket {
     head: RawPacketHead,
-    data: RawPacketData
+    data: RawPacketData,
 }
 
 impl RawPacket {
@@ -91,11 +91,11 @@ impl RawPacket {
     }
 
     pub fn from_buffer(buffer: &[u8]) -> Self {
-        let (size, buffer)= read_u32_be(buffer);
-        let (header_size, buffer)= read_u16_be(buffer);
-        let (version, buffer)= read_u16_be(buffer);
-        let (opcode, buffer)= read_u32_be(buffer);
-        let (sequence, buffer)= read_u32_be(buffer);
+        let (size, buffer) = read_u32_be(buffer);
+        let (header_size, buffer) = read_u16_be(buffer);
+        let (version, buffer) = read_u16_be(buffer);
+        let (opcode, buffer) = read_u32_be(buffer);
+        let (sequence, buffer) = read_u32_be(buffer);
         let head = RawPacketHead {
             size,
             header_size,
@@ -103,40 +103,40 @@ impl RawPacket {
             opcode,
             sequence,
         };
-    
+
         let data = RawPacketData(buffer.to_owned());
-    
-        RawPacket {head, data}
+
+        RawPacket { head, data }
     }
 
     fn from_buffers(buffer: &[u8]) -> Vec<Self> {
         let mut packets = vec![];
         let mut ptr = 0;
         loop {
-            let (size, _)= read_u32_be(&buffer[ptr..ptr+4]);
+            let (size, _) = read_u32_be(&buffer[ptr..ptr + 4]);
             let size = size as usize;
-            packets.push(Self::from_buffer(&buffer[ptr..ptr+size]));
+            packets.push(Self::from_buffer(&buffer[ptr..ptr + size]));
             ptr += size;
-            if ptr>=buffer.len() {
+            if ptr >= buffer.len() {
                 break;
             }
         }
         packets
     }
 
-    pub fn build(op:Operation, data: Vec<u8>) -> Self {
+    pub fn build(op: Operation, data: Vec<u8>) -> Self {
         let header_size = 16_u16;
         let size = (16 + data.len()) as u32;
         let opcode = op as u32;
         Self {
-            head: RawPacketHead { 
-                size, 
-                header_size, 
-                proto_code:1, 
-                opcode, 
-                sequence:1 
+            head: RawPacketHead {
+                size,
+                header_size,
+                proto_code: 1,
+                opcode,
+                sequence: 1,
             },
-            data: RawPacketData(data)
+            data: RawPacketData(data),
         }
     }
 
@@ -144,9 +144,9 @@ impl RawPacket {
         const HEAD_SIZE: usize = 16;
         let head = self.head;
         let data = self.data.0;
-        let mut buffer = Vec::<u8>::with_capacity(128+data.len());
+        let mut buffer = Vec::<u8>::with_capacity(128 + data.len());
         buffer.resize(data.len() + HEAD_SIZE, 0);
-        let mut writer:&mut [u8] = &mut buffer;
+        let mut writer: &mut [u8] = &mut buffer;
         writer = write_u32_be(writer, head.size);
         writer = write_u16_be(writer, head.header_size);
         writer = write_u16_be(writer, head.proto_code);
@@ -160,8 +160,8 @@ impl RawPacket {
         match self.head.proto_code {
             // raw json
             0 => {
-                if let Ok(data_json)=serde_json::from_slice::<serde_json::Value>(&self.data.0) {
-                    vec!(Data::Json(data_json))
+                if let Ok(data_json) = serde_json::from_slice::<serde_json::Value>(&self.data.0) {
+                    vec![Data::Json(data_json)]
                 } else {
                     // println!("cannot deser {}", String::from_utf8(self.data.0).unwrap() );
                     vec![]
@@ -170,24 +170,24 @@ impl RawPacket {
             1 => {
                 let (bytes, _) = self.data.0.split_array_ref::<4>();
                 let popularity = u32::from_be_bytes(*bytes);
-                vec!(Data::Popularity(popularity))
+                vec![Data::Popularity(popularity)]
             }
             2 => {
-                #[cfg(feature = "deflate")] 
+                #[cfg(feature = "deflate")]
                 {
                     let deflated = deflate::deflate_bytes(&self.data.0);
                     let utf8 = String::from_utf8(deflated).unwrap();
-                    return vec!(Data::Deflate(utf8));
+                    return vec![Data::Deflate(utf8)];
                 }
-                vec!(Data::Deflate("".to_string()))
+                vec![Data::Deflate("".to_string())]
             }
             3 => {
                 use std::io::Read;
-                let read_stream = std::io::Cursor::new(self.data.0) ;
+                let read_stream = std::io::Cursor::new(self.data.0);
                 let mut input = brotli::Decompressor::new(read_stream, 4096);
                 let mut buffer = Vec::new();
                 match input.read_to_end(&mut buffer) {
-                    Ok(_size) => {                        
+                    Ok(_size) => {
                         let unpacked = RawPacket::from_buffers(&buffer);
                         let mut packets = vec![];
                         for p in unpacked {
@@ -200,14 +200,13 @@ impl RawPacket {
                     Err(e) => {
                         log::error!("读取数据包解压结果错误：{e}");
                         vec![]
-                    }     
+                    }
                 }
             }
             _ => {
                 log::warn!("不支持的操作码：{}", self.head.proto_code);
                 vec![]
-            }
-            // 
+            } //
         }
     }
 }
@@ -234,9 +233,12 @@ pub enum Operation {
     UnregisterReply,
 }
 
-use serde::{Serialize};
+use serde::Serialize;
 
-use crate::{event::{EventData, Event}, cmd::CmdDeserError};
+use crate::{
+    cmd::CmdDeserError,
+    event::{Event, PopularityUpdateEvent},
+};
 #[derive(Debug, Clone, Serialize)]
 pub struct Auth {
     uid: u64,
@@ -244,18 +246,18 @@ pub struct Auth {
     protover: i32,
     platform: &'static str,
     r#type: i32,
-    key: Option<String>
+    key: Option<String>,
 }
 
 impl Auth {
-    pub fn new(uid: u64, roomid: u64, key:Option<String>) -> Self {
+    pub fn new(uid: u64, roomid: u64, key: Option<String>) -> Self {
         Self {
-            uid, 
+            uid,
             roomid,
             protover: 3,
             platform: "web",
             r#type: 2,
-            key
+            key,
         }
     }
 
