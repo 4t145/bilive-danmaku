@@ -17,6 +17,7 @@
 //!```
 
 // #![allow(dead_code)]
+#![deny(clippy::unwrap_used, clippy::print_stdout, clippy::panic)]
 #![feature(split_array)]
 #[cfg(feature="connect")]
 mod room;

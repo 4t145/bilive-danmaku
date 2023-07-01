@@ -140,6 +140,9 @@ pub enum CmdDeserError {
     },
     Ignored {
         tag: String
+    },
+    Custom {
+        text: String
     }
 }
 
@@ -155,6 +158,9 @@ impl Display for CmdDeserError {
             CmdDeserError::Ignored{tag} =>  {
                 f.write_fmt(format_args!("被省略的tag: \n{}", tag))
             }
+            CmdDeserError::Custom { text } => {
+                f.write_fmt(format_args!("自定义错误: \n{}", text))
+            },
         }
     }
 }
@@ -167,6 +173,7 @@ impl Cmd {
         };
         match &val["cmd"] {
             Value::String(cmd) => {
+                const PROTOCOL_ERROR: &str = "danmu_msg事件协议错误";
                 match cmd.as_str() {
                     "NOTICE_MSG"
                     |"WIDGET_BANNER"
@@ -176,12 +183,12 @@ impl Cmd {
                         Err(CmdDeserError::Ignored { tag: cmd.clone() })
                     }
                     "DANMU_MSG" => {
-                        let info = val["info"].as_array().unwrap();
-                        let message = info[1].as_str().unwrap().clone();
-                        let user = info[2].as_array().unwrap();
-                        let uid = user[0].as_u64().unwrap();
-                        let name = user[1].as_str().unwrap();
-                        let danmaku_type = info[0].as_array().unwrap()[10].as_u64().unwrap();
+                        let info = val["info"].as_array().expect(PROTOCOL_ERROR);
+                        let message = info[1].as_str().expect(PROTOCOL_ERROR).clone();
+                        let user = info[2].as_array().expect(PROTOCOL_ERROR);
+                        let uid = user[0].as_u64().expect(PROTOCOL_ERROR);
+                        let name = user[1].as_str().expect(PROTOCOL_ERROR);
+                        let danmaku_type = info[0].as_array().expect(PROTOCOL_ERROR)[10].as_u64().expect(PROTOCOL_ERROR);
                         let fans_medal = &info[3];
                         let fans_medal = {
                             let medal_level = fans_medal[0].as_u64();
@@ -205,7 +212,7 @@ impl Cmd {
                             }
                         };
                         // 是否为表情？
-                        let emoticon = if let Some(emoticon) = info[0].as_array().unwrap()[13].as_object() {
+                        let emoticon = if let Some(emoticon) = info[0].as_array().expect(PROTOCOL_ERROR)[13].as_object() {
                             let height = emoticon["height"].as_u64().unwrap_or_default();
                             let width = emoticon["width"].as_u64().unwrap_or_default();
                             let emoticon_unique = emoticon["emoticon_unique"].as_str().unwrap_or_default().to_owned();
@@ -235,7 +242,7 @@ impl Cmd {
                     _ => {
                         serde_json::from_value(val.clone()).map_err(|json_error|
                             CmdDeserError::CannotDeser{
-                                json_error: json_error, 
+                                json_error, 
                                 text: val.to_string()
                             }
                         )
@@ -248,7 +255,7 @@ impl Cmd {
         }
     }
 
-    pub fn as_event(self) -> Option<EventData> {
+    pub fn into_event(self) -> Option<EventData> {
         match self {
             Cmd::InteractWord { fans_medal, user } 
                 => Some(EventData::EnterRoom {
@@ -311,7 +318,8 @@ impl Cmd {
                 Some(EventData::HotRankSettlement { uname, face, area: area_name, rank}),
             Cmd::GuardBuy { gift_id, gift_name, guard_level, price, num, uid, username} => 
                 Some(EventData::GuardBuy{ level: guard_level, price, user: User{uname: username, uid, face:None}}),
-            _ => {
+            rest => {
+                log::debug!("unhandled cmd: {:?}", rest);
                 None
             }
         }

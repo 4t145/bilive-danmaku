@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, fmt::Display};
 
 fn write_u32_be(writer: &mut [u8], val: u32) -> &mut [u8] {
     let (write, writer) = writer.split_array_mut::<4>();
@@ -33,17 +33,27 @@ pub enum EventParseError {
     CmdDeserError(CmdDeserError),
     DeflateMessage
 }
+
+impl Display for EventParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EventParseError::CmdDeserError(e) => write!(f, "CmdDeserError: {}", e),
+            EventParseError::DeflateMessage => write!(f, "DeflateMessage")
+        }
+    }
+}
+
 impl Data {
-    pub fn to_event(self) -> Result<Option<Event>, EventParseError> {
+    pub fn into_event(self) -> Result<Option<Event>, EventParseError> {
         let data = match self {
             Data::Json(json_val) => match crate::cmd::Cmd::deser(json_val) {
-                Ok(cmd) => cmd.as_event(),
+                Ok(cmd) => cmd.into_event(),
                 Err(e) => return Err(EventParseError::CmdDeserError(e))
             },
             Data::Popularity(popularity) => Some(EventData::PopularityUpdate { popularity }),
             Data::Deflate(_) => return Err(EventParseError::DeflateMessage)
         };
-        return Ok(data.map(Into::into))
+        Ok(data.map(Into::into))
     }
 }
 
@@ -81,7 +91,7 @@ impl RawPacket {
     }
 
     pub fn from_buffer(buffer: &[u8]) -> Self {
-        let (size, buffer)= read_u32_be(&buffer);
+        let (size, buffer)= read_u32_be(buffer);
         let (header_size, buffer)= read_u16_be(buffer);
         let (version, buffer)= read_u16_be(buffer);
         let (opcode, buffer)= read_u32_be(buffer);
@@ -111,11 +121,11 @@ impl RawPacket {
                 break;
             }
         }
-        return packets;
+        packets
     }
 
     pub fn build(op:Operation, data: Vec<u8>) -> Self {
-        let header_size = 16 as u16;
+        let header_size = 16_u16;
         let size = (16 + data.len()) as u32;
         let opcode = op as u32;
         Self {
@@ -131,22 +141,18 @@ impl RawPacket {
     }
 
     pub fn ser(self) -> Vec<u8> {
+        const HEAD_SIZE: usize = 16;
         let head = self.head;
         let data = self.data.0;
-        let mut buffer = unsafe {
-            let len = 16+data.len();
-            let mut v = Vec::<u8>::with_capacity(128+data.len());
-            v.set_len(len);
-            v
-        };
-
+        let mut buffer = Vec::<u8>::with_capacity(128+data.len());
+        buffer.resize(data.len() + HEAD_SIZE, 0);
         let mut writer:&mut [u8] = &mut buffer;
         writer = write_u32_be(writer, head.size);
         writer = write_u16_be(writer, head.header_size);
         writer = write_u16_be(writer, head.proto_code);
         writer = write_u32_be(writer, head.opcode);
         writer = write_u32_be(writer, head.sequence);
-        writer.write(&data).unwrap();
+        writer.write_all(&data).expect("序列化包时，数据写入错误");
         buffer
     }
 
@@ -173,7 +179,7 @@ impl RawPacket {
                     let utf8 = String::from_utf8(deflated).unwrap();
                     return vec!(Data::Deflate(utf8));
                 }
-                return vec!(Data::Deflate("".to_string()));
+                vec!(Data::Deflate("".to_string()))
             }
             3 => {
                 use std::io::Read;
@@ -192,13 +198,13 @@ impl RawPacket {
                         packets
                     }
                     Err(e) => {
-                        println!("{}",e);
+                        log::error!("读取数据包解压结果错误：{e}");
                         vec![]
                     }     
                 }
             }
             _ => {
-                println!("不支持的操作码：{}", self.head.proto_code);
+                log::warn!("不支持的操作码：{}", self.head.proto_code);
                 vec![]
             }
             // 

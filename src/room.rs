@@ -94,7 +94,7 @@ impl Connector {
         let backup = self.clone();
         let auth = Auth::new(0, roomid, Some(backup.key.clone()));
         let stream = Connection::connect(url, auth).await.map_err(|_|ConnectError::HandshakeError)?;
-        return Ok(stream);
+        Ok(stream)
     }
 }
 

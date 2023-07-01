@@ -35,23 +35,28 @@ impl Stream for TokioConnection {
             Ready(Some(Ok(Binary(bin)))) => {
                 let packet = RawPacket::from_buffer(&bin);
                 for data in packet.get_datas() {
-                    match data.to_event() {
+                    match data.into_event() {
                         Ok(Some(event)) => self.buffer.push_back(Ok(event)),
-                        _ => {}
+                        Ok(None) => {
+                            
+                        }
+                        Err(e) => {
+                            log::error!("解析数据包失败：{}", e);
+                        }
                     }
                 }
-                return self.poll_next(cx);
+                self.poll_next(cx)
             }
-            Ready(Some(Ok(Close(_)))) => return Ready(Some(Err(ConnectionClosed))),
+            Ready(Some(Ok(Close(_)))) => Ready(Some(Err(ConnectionClosed))),
             // 这不太可能发生，可能要标记一下
-            Ready(Some(Ok(_))) => return self.poll_next(cx),
+            Ready(Some(Ok(_))) => self.poll_next(cx),
             // 错误
-            Ready(Some(Err(e))) => return Ready(Some(Err(WsError(e.to_string())))),
+            Ready(Some(Err(e))) => Ready(Some(Err(WsError(e.to_string())))),
             // 接受到None
             Ready(None) => {
-                return Ready(None);
+                Ready(None)
             }
-            Pending => return Pending,
+            Pending => Pending,
         }
     }
 }
@@ -74,7 +79,7 @@ impl TokioConnection {
             .map_err(|_| WsConnectError::FailToSendAuth)?;
         let _auth_reply = match ws_stream.next().await {
             Some(Ok(Binary(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
-            _other @ _ => {
+            _other => {
                 // exception.send(Exception::FailToAuth).await.unwrap();
                 return Err(WsConnectError::FailToAuth);
             }
@@ -89,14 +94,14 @@ impl TokioConnection {
                 interval.tick().await;
                 tx.send(ws2::Message::Binary(RawPacket::heartbeat().ser()))
                     .await
-                    .unwrap();
+                    .expect("hb send error");
             }
         };
-        return Ok(TokioConnection {
+        Ok(TokioConnection {
             ws_rx: rx,
             hb_handle: tokio::spawn(hb),
             buffer: VecDeque::with_capacity(256),
-        });
+        })
     }
 
     pub fn abort(self) {

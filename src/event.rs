@@ -1,4 +1,5 @@
 use crate::model::*;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -61,12 +62,12 @@ pub enum EventData {
     },
 }
 
-impl Into<Event> for EventData {
-    fn into(self) -> Event {
+impl From<EventData> for Event {
+    fn from(val: EventData) -> Self {
         use std::time::*;
         Event {
-            data: self,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
+            data: val,
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).expect("时间倒流").as_millis() as u64
         }
     }
 }
