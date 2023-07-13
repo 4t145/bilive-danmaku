@@ -160,10 +160,7 @@ impl Display for CmdDeserError {
 
 impl Cmd {
     pub fn deser(val: Value) -> Result<Self, CmdDeserError> {
-        #[cfg(feature = "verbose")]
-        {
-            println!("{}", val.to_string());
-        };
+        log::trace!("{}", val.to_string());
         match &val["cmd"] {
             Value::String(cmd) => {
                 const PROTOCOL_ERROR: &str = "danmu_msg事件协议错误";

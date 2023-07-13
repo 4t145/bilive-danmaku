@@ -6,6 +6,7 @@ use crate::{connection::*, packet::*};
 #[derive(Debug, Clone)]
 pub struct Connector {
     pub roomid: u64,
+    pub uid: u64,
     pub key: String,
     pub host_index: usize,
     pub host_list: Vec<Host>,
@@ -16,6 +17,17 @@ pub enum InitError {
     ParseError,
     HttpError,
     DeserError(serde_json::Error),
+}
+impl From<serde_json::Error> for InitError {
+    fn from(val: serde_json::Error) -> Self {
+        InitError::DeserError(val)
+    }
+}
+
+impl From<surf::Error> for InitError {
+    fn from(_val: surf::Error) -> Self {
+        InitError::HttpError
+    }
 }
 
 #[derive(Debug)]
@@ -30,7 +42,7 @@ impl Connector {
             "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}",
             roomid
         );
-        match surf::get(room_info_url).await {
+        let uid = match surf::get(room_info_url).await {
             Ok(mut resp) => {
                 if resp.status().is_success() {
                     if let Ok(body) = resp.body_string().await {
@@ -38,6 +50,9 @@ impl Connector {
                             serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
                         if let Some(data) = response_json_body.data {
                             roomid = data.room_id;
+                            data.uid
+                        } else {
+                            return Err(InitError::ParseError);
                         }
                     } else {
                         return Err(InitError::ParseError);
@@ -47,7 +62,7 @@ impl Connector {
                 }
             }
             Err(_) => return Err(InitError::HttpError),
-        }
+        };
         let url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0",
             roomid
@@ -59,6 +74,7 @@ impl Connector {
                         let response_json_body: Response =
                             serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
                         let disconnected = Connector {
+                            uid,
                             host_index: 0,
                             roomid,
                             key: response_json_body.data.token,
@@ -92,7 +108,7 @@ impl Connector {
         let url = self.host_list[self.host_index].wss();
         let roomid = self.roomid;
         let backup = self.clone();
-        let auth = Auth::new(0, roomid, Some(backup.key.clone()));
+        let auth = Auth::new(self.uid, roomid, Some(backup.key.clone()));
         let stream = Connection::connect(url, auth)
             .await
             .map_err(|_| ConnectError::HandshakeError)?;
@@ -103,6 +119,7 @@ impl Connector {
 #[derive(Debug, Deserialize)]
 struct RoomPlayInfoData {
     room_id: u64,
+    uid: u64,
 }
 
 ///
