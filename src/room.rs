@@ -73,14 +73,15 @@ impl Connector {
                     if let Ok(body) = resp.body_string().await {
                         let response_json_body: Response =
                             serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
-                        let disconnected = Connector {
+                        let connector = Connector {
                             uid,
                             host_index: 0,
                             roomid,
                             key: response_json_body.data.token,
                             host_list: response_json_body.data.host_list,
                         };
-                        Ok(disconnected)
+                        log::debug!("connector: {:?}", connector);
+                        Ok(connector)
                     } else {
                         Err(InitError::ParseError)
                     }
@@ -109,9 +110,10 @@ impl Connector {
         let roomid = self.roomid;
         let backup = self.clone();
         let auth = Auth::new(self.uid, roomid, Some(backup.key.clone()));
-        let stream = Connection::connect(url, auth)
-            .await
-            .map_err(|_| ConnectError::HandshakeError)?;
+        let stream = Connection::connect(url, auth).await.map_err(|e| {
+            log::error!("handshake error: {:?}", e);
+            ConnectError::HandshakeError
+        })?;
         Ok(stream)
     }
 }

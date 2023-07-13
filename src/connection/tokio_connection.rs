@@ -39,7 +39,7 @@ impl Stream for TokioConnection {
                         Ok(Some(event)) => self.buffer.push_back(Ok(event)),
                         Ok(None) => {}
                         Err(e) => {
-                            log::error!("解析数据包失败：{}", e);
+                            log::warn!("解析数据包失败：{}", e);
                         }
                     }
                 }
@@ -76,7 +76,7 @@ impl TokioConnection {
         let _auth_reply = match ws_stream.next().await {
             Some(Ok(Binary(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
             _other => {
-                // exception.send(Exception::FailToAuth).await.unwrap();
+                log::error!("auth reply error: {_other:?}");
                 return Err(WsConnectError::FailToAuth);
             }
         };

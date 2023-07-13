@@ -1,6 +1,8 @@
 use bilive_danmaku::Connector;
 use futures_util::StreamExt;
 fn main() {
+    std::env::set_var("RUST_LOG", "info,bilive_danmaku=debug");
+    env_logger::init();
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -9,15 +11,15 @@ fn main() {
 }
 
 async fn tokio_main() {
-    let connector = Connector::init(851181).await.unwrap();
+    let connector = Connector::init(21452505).await.unwrap();
     let mut stream = connector.connect().await.unwrap();
     while let Some(maybe_evt) = stream.next().await {
         match maybe_evt {
             Ok(evt) => {
-                dbg!(evt.data);
+                log::info!("{:?}", evt);
             }
             Err(e) => {
-                dbg!(e);
+                log::warn!("{:?}", e);
             }
         }
     }

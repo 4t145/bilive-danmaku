@@ -76,3 +76,6 @@ bincode = ["dep:bincode"]
 deflate = ["dep:deflate", "connect"]
 event = []
 json = []
+
+[dev-dependencies]
+env_logger = "*"
