@@ -22,11 +22,15 @@ jobs:
         toolchain: nightly
         override: true
         components: rustfmt, clippy
-    - name: Build
-      run: cargo build --verbose
+    - name: Build default
+      run: cargo build --verbose --features default
+    - name: Build rt-tokio
+      run: cargo build --verbose --features rt_tokio
     - name: Run tests
       run: cargo test --verbose
     - name: Check formatting
       run: cargo fmt -- --check
-    - name: Check code style
-      run: cargo clippy -- -D warnings
+    - name: Check code style for default
+      run: cargo clippy -- -D warnings --features default
+    - name: Check code style for rt-tokio
+      run: cargo clippy -- -D warnings --features rt_tokio

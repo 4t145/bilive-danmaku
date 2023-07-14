@@ -179,6 +179,7 @@ impl RawPacket {
                     let utf8 = String::from_utf8(deflated).unwrap();
                     return vec![Data::Deflate(utf8)];
                 }
+                #[cfg(not(feature = "deflate"))]
                 vec![Data::Deflate("".to_string())]
             }
             3 => {
