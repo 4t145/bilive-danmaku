@@ -31,6 +31,6 @@ jobs:
     - name: Check formatting
       run: cargo fmt -- --check
     - name: Check code style for default
-      run: cargo clippy -- -D warnings --features default
+      run: cargo clippy --features default -- -D warnings
     - name: Check code style for rt-tokio
-      run: cargo clippy -- -D warnings --features rt_tokio
+      run: cargo clippy --features rt_tokio -- -D warnings
