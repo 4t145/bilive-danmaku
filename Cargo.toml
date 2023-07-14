@@ -79,6 +79,3 @@ json = []
 
 [dev-dependencies]
 env_logger = "*"
-
-[profile.dev]
-toolchain = "nightly"

@@ -1,7 +1,7 @@
 //! # 使用
 //!
 //!
-//!```
+//!```no_run,ignore
 //!use bilive_danmaku::{RoomService}
 //!async fn service() {
 //!    let service = RoomService::new(477317922).init().await.unwrap();
