@@ -16,7 +16,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install Rust nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Check formatting
+      run: cargo fmt -- --check
+    - name: Check code style
+      run: cargo clippy -- -D warnings
