@@ -61,7 +61,9 @@ pub(crate) enum Cmd {
         roomid: u64,
     },
     UserToastMsg {},
-    StopLiveRoomList {},
+    StopLiveRoomList {
+        list: Vec<u64>
+    },
     InteractWord {
         fans_medal: Option<FansMedal>,
         #[serde(flatten)]
@@ -167,7 +169,17 @@ impl Cmd {
                 match cmd.as_str() {
                     "NOTICE_MSG" | "WIDGET_BANNER" | "HOT_RANK_CHANGED" | "HOT_RANK_SETTLEMENT" => {
                         Err(CmdDeserError::Ignored { tag: cmd.clone() })
-                    }
+                    },
+                    "STOP_LIVE_ROOM_LIST" =>{
+                        let list :Vec<u64> = val["data"]["room_id_list"].as_array().unwrap().iter().map(|id| 
+                            id.as_u64().unwrap()
+                        ).collect();
+                        Ok(
+                            Self::StopLiveRoomList {
+                                list
+                            }
+                        )
+                    },
                     "DANMU_MSG" => {
                         let info = val["info"].as_array().expect(PROTOCOL_ERROR);
                         let message = info[1].as_str().expect(PROTOCOL_ERROR).clone();
@@ -412,6 +424,13 @@ impl Cmd {
                     },
                 }
                 .into(),
+            ),
+            Cmd::StopLiveRoomList { list } 
+            =>Some(
+                StopLiveEvent{
+                    list
+                }
+                .into()
             ),
             rest => {
                 log::debug!("unhandled cmd: {:?}", rest);

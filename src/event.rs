@@ -88,6 +88,9 @@ define_event! {
         area: String,
         rank: u64,
     },
+    StopLiveEvent{
+        list: Vec<u64>
+    }
 }
 
 impl From<EventData> for Event {
