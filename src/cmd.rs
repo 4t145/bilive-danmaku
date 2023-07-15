@@ -148,21 +148,23 @@ impl Display for CmdDeserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CmdDeserError::CannotDeser { json_error, text } => f.write_fmt(format_args!(
-                "无法反序列化，可能是由于未知的cmd tag \n json_error: \n{}, json文本: \n{}",
+                "无法反序列化\n json_error: \n{}, json文本: \n{}",
                 json_error, text
             )),
             CmdDeserError::Untagged { text } => {
                 f.write_fmt(format_args!("缺少 tag 的消息\n , json文本: \n{}", text))
             }
             CmdDeserError::Ignored { tag } => f.write_fmt(format_args!("被省略的tag: \n{}", tag)),
-            CmdDeserError::Custom { text } => f.write_fmt(format_args!("自定义错误: \n{}", text)),
+            CmdDeserError::Custom { text } => f.write_fmt(format_args!("错误: \n{}", text)),
         }
     }
 }
 
+impl std::error::Error for CmdDeserError {}
+
 impl Cmd {
     pub fn deser(val: Value) -> Result<Self, CmdDeserError> {
-        log::trace!("{}", val.to_string());
+        log::trace!("deserialize json value: {}", val.to_string());
         match &val["cmd"] {
             Value::String(cmd) => {
                 const PROTOCOL_ERROR: &str = "danmu_msg事件协议错误";
@@ -181,6 +183,7 @@ impl Cmd {
                         )
                     },
                     "DANMU_MSG" => {
+                        // 如果这里出问题，可能是b站协议发生变更了，所以panic一下无可厚非吧
                         let info = val["info"].as_array().expect(PROTOCOL_ERROR);
                         let message = info[1].as_str().expect(PROTOCOL_ERROR).clone();
                         let user = info[2].as_array().expect(PROTOCOL_ERROR);

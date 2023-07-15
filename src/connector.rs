@@ -1,4 +1,3 @@
-// #[allow(dead_code)]
 use serde::Deserialize;
 
 use crate::{connection::*, packet::*};
@@ -7,90 +6,79 @@ use crate::{connection::*, packet::*};
 pub struct Connector {
     pub roomid: u64,
     pub uid: u64,
-    pub key: String,
+    pub token: String,
     pub host_index: usize,
     pub host_list: Vec<Host>,
 }
 
 #[derive(Debug)]
 pub enum InitError {
-    ParseError,
-    HttpError,
+    ParseError(String),
+    HttpError(reqwest::Error),
     DeserError(serde_json::Error),
 }
+
 impl From<serde_json::Error> for InitError {
     fn from(val: serde_json::Error) -> Self {
         InitError::DeserError(val)
     }
 }
 
-impl From<surf::Error> for InitError {
-    fn from(_val: surf::Error) -> Self {
-        InitError::HttpError
+impl From<reqwest::Error> for InitError {
+    fn from(err: reqwest::Error) -> Self {
+        InitError::HttpError(err)
     }
 }
 
-#[derive(Debug)]
-pub enum Exception {
-    FailToAuth,
-    WsSendError(String),
-    WsDisconnected(String),
+impl std::fmt::Display for InitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InitError::ParseError(msg) => write!(f, "ParseError: {}", msg),
+            InitError::HttpError(err) => write!(f, "HttpError: {}", err),
+            InitError::DeserError(err) => write!(f, "DeserError: {}", err),
+        }
+    }
 }
+
 impl Connector {
     pub async fn init(mut roomid: u64) -> Result<Self, InitError> {
+        let client = reqwest::Client::new();
         let room_info_url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}",
             roomid
         );
-        let uid = match surf::get(room_info_url).await {
-            Ok(mut resp) => {
-                if resp.status().is_success() {
-                    if let Ok(body) = resp.body_string().await {
-                        let response_json_body: RoomPlayInfo =
-                            serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
-                        if let Some(data) = response_json_body.data {
-                            roomid = data.room_id;
-                            data.uid
-                        } else {
-                            return Err(InitError::ParseError);
-                        }
-                    } else {
-                        return Err(InitError::ParseError);
-                    }
-                } else {
-                    return Err(InitError::HttpError);
-                }
-            }
-            Err(_) => return Err(InitError::HttpError),
-        };
+        let RoomPlayInfoData {
+            room_id: real_room_id,
+            uid,
+        } = client
+            .get(room_info_url)
+            .send()
+            .await?
+            .json::<RoomPlayInfo>()
+            .await?
+            .data
+            .ok_or(InitError::ParseError(format!("Fail to get room info")))?;
+        roomid = real_room_id;
         let url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0",
             roomid
         );
-        match surf::get(url).await {
-            Ok(mut resp) => {
-                if resp.status().is_success() {
-                    if let Ok(body) = resp.body_string().await {
-                        let response_json_body: Response =
-                            serde_json::from_str(body.as_str()).map_err(InitError::DeserError)?;
-                        let connector = Connector {
-                            uid,
-                            host_index: 0,
-                            roomid,
-                            key: response_json_body.data.token,
-                            host_list: response_json_body.data.host_list,
-                        };
-                        log::debug!("connector: {:?}", connector);
-                        Ok(connector)
-                    } else {
-                        Err(InitError::ParseError)
-                    }
-                } else {
-                    Err(InitError::HttpError)
-                }
-            }
-            Err(_) => Err(InitError::HttpError),
-        }
+        let DanmuInfoData { token, host_list } = client
+            .get(url)
+            .send()
+            .await?
+            .json::<DanmuInfo>()
+            .await?
+            .data
+            .ok_or(InitError::ParseError(format!("Fail to get danmu info")))?;
+        let connector = Connector {
+            uid,
+            host_index: 0,
+            roomid,
+            token,
+            host_list,
+        };
+        Ok(connector)
     }
 
     pub fn use_host(&mut self, index: usize) -> Result<&'_ str, usize> {
@@ -109,7 +97,7 @@ impl Connector {
         let url = self.host_list[self.host_index].wss();
         let roomid = self.roomid;
         let backup = self.clone();
-        let auth = Auth::new(self.uid, roomid, Some(backup.key.clone()));
+        let auth = Auth::new(self.uid, roomid, Some(backup.token.clone()));
         let stream = Connection::connect(url, auth).await.map_err(|e| {
             log::error!("handshake error: {:?}", e);
             ConnectError::HandshakeError
@@ -133,15 +121,15 @@ struct RoomPlayInfo {
 }
 
 #[derive(Debug, Deserialize)]
-struct Response {
+struct DanmuInfo {
     // code: i32,
     // message: String,
     // ttl: i32,
-    data: ResponseData,
+    data: Option<DanmuInfoData>,
 }
 #[derive(Debug, Deserialize)]
 
-struct ResponseData {
+struct DanmuInfoData {
     // max_delay: i32,
     token: String,
     host_list: Vec<Host>,

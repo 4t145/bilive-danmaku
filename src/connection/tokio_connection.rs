@@ -17,6 +17,7 @@ pub struct TokioConnection {
     hb_handle: tokio::task::JoinHandle<()>,
     buffer: VecDeque<Result<Event, EventStreamError>>, // rx_handle: tokio::task::JoinHandle<()>,
 }
+
 impl Stream for TokioConnection {
     type Item = Result<Event, EventStreamError>;
 
@@ -57,29 +58,31 @@ impl Stream for TokioConnection {
     }
 }
 
+impl From<ws2::Error> for WsConnectError {
+    fn from(val: ws2::Error) -> Self {
+        WsConnectError::WsError(val)
+    }
+}
+
 impl TokioConnection {
     pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
         use ws2::Message::*;
-        let conn_result = tokio_ws2::connect_async(url).await;
-        let mut ws_stream = match conn_result {
-            Ok((stream, _resp)) => stream,
-            Err(_e) => {
-                return Err(WsConnectError::FailToConnect);
-            }
-        };
-
+        let (mut ws_stream, _resp) = tokio_ws2::connect_async(url).await?;
         let authpack_bin = RawPacket::build(Operation::Auth, auth.ser()).ser();
-        ws_stream
-            .send(Binary(authpack_bin))
-            .await
-            .map_err(|_| WsConnectError::FailToSendAuth)?;
-        let _auth_reply = match ws_stream.next().await {
-            Some(Ok(Binary(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
-            _other => {
-                log::error!("auth reply error: {_other:?}");
-                return Err(WsConnectError::FailToAuth);
+        ws_stream.send(Binary(authpack_bin)).await?;
+        let resp = ws_stream.next().await.ok_or_else(|| {
+            log::error!("ws stream encounter unexpected end");
+            WsConnectError::UnexpecedEnd
+        })??;
+        match resp {
+            Binary(auth_reply_bin) => {
+                log::debug!("auth reply: {:?}", RawPacket::from_buffer(&auth_reply_bin));
             }
-        };
+            _other => {
+                log::error!("auth reply is not a binary: {:?}", _other);
+                return Err(WsConnectError::AuthFailed);
+            }
+        }
         let (mut tx, rx) = ws_stream.split();
         // hb task
         let hb = async move {
