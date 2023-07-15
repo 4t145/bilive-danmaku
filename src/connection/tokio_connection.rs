@@ -68,7 +68,7 @@ impl TokioConnection {
     pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
         use ws2::Message::*;
         let (mut ws_stream, _resp) = tokio_ws2::connect_async(url).await?;
-        let authpack_bin = RawPacket::build(Operation::Auth, auth.ser()).ser();
+        let authpack_bin = RawPacket::build(Operation::Auth, &auth.ser()).ser();
         ws_stream.send(Binary(authpack_bin)).await?;
         let resp = ws_stream.next().await.ok_or_else(|| {
             log::error!("ws stream encounter unexpected end");

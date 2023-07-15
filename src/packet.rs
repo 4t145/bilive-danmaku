@@ -1,6 +1,10 @@
-use std::{fmt::Display, io::Write};
-
-fn write_u32_be(writer: &mut [u8], val: u32) -> &mut [u8] {
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use std::{
+    fmt::Display,
+    io::{Cursor, Read, Write},
+};
+// enable these functions after `split_array` is stable
+/* fn write_u32_be(writer: &mut [u8], val: u32) -> &mut [u8] {
     let (write, writer) = writer.split_array_mut::<4>();
     *write = val.to_be_bytes();
     writer
@@ -10,17 +14,17 @@ fn write_u16_be(writer: &mut [u8], val: u16) -> &mut [u8] {
     let (write, writer) = writer.split_array_mut::<2>();
     *write = val.to_be_bytes();
     writer
-}
+} */
 
-fn read_u32_be(buffer: &[u8]) -> (u32, &[u8]) {
-    let (read, tail) = buffer.split_array_ref::<4>();
+/* fn read_u32_be(buffer: &[u8]) -> (u32, &[u8]) {
+    let (read, tail) = buffer.split_array::<4>();
     (u32::from_be_bytes(*read), tail)
 }
 
 fn read_u16_be(buffer: &[u8]) -> (u16, &[u8]) {
     let (read, tail) = buffer.split_array_ref::<2>();
     (u16::from_be_bytes(*read), tail)
-}
+} */
 
 #[derive(Debug, Clone)]
 pub enum Data {
@@ -68,15 +72,15 @@ struct RawPacketHead {
 
 #[repr(transparent)]
 #[derive(Debug, Clone)]
-struct RawPacketData(Vec<u8>);
+struct RawPacketData<'p>(&'p [u8]);
 
 #[derive(Debug, Clone)]
-pub struct RawPacket {
+pub struct RawPacket<'p> {
     head: RawPacketHead,
-    data: RawPacketData,
+    data: RawPacketData<'p>,
 }
 
-impl RawPacket {
+impl<'p> RawPacket<'p> {
     pub fn heartbeat() -> Self {
         RawPacket {
             head: RawPacketHead {
@@ -86,16 +90,18 @@ impl RawPacket {
                 opcode: 2,
                 sequence: 1,
             },
-            data: RawPacketData(b"[object Object]".to_vec()),
+            data: RawPacketData(b"[object Object]"),
         }
     }
 
-    pub fn from_buffer(buffer: &[u8]) -> Self {
-        let (size, buffer) = read_u32_be(buffer);
-        let (header_size, buffer) = read_u16_be(buffer);
-        let (version, buffer) = read_u16_be(buffer);
-        let (opcode, buffer) = read_u32_be(buffer);
-        let (sequence, buffer) = read_u32_be(buffer);
+    pub(crate) fn from_buffer(buffer: &'p [u8]) -> Self {
+        const READ_FAIL_ERR: &str = "read raw packet error";
+        let mut cursor = Cursor::new(buffer);
+        let size = cursor.read_u32::<BigEndian>().expect(READ_FAIL_ERR);
+        let header_size = cursor.read_u16::<BigEndian>().expect(READ_FAIL_ERR);
+        let version = cursor.read_u16::<BigEndian>().expect(READ_FAIL_ERR);
+        let opcode = cursor.read_u32::<BigEndian>().expect(READ_FAIL_ERR);
+        let sequence = cursor.read_u32::<BigEndian>().expect(READ_FAIL_ERR);
         let head = RawPacketHead {
             size,
             header_size,
@@ -103,28 +109,41 @@ impl RawPacket {
             opcode,
             sequence,
         };
-
-        let data = RawPacketData(buffer.to_owned());
-
+        let pos = cursor.position();
+        let data = RawPacketData(&buffer[(pos as usize)..]);
         RawPacket { head, data }
     }
 
-    fn from_buffers(buffer: &[u8]) -> Vec<Self> {
+    fn from_buffers(buffer: &'p [u8]) -> Vec<Self> {
+        const READ_FAIL_ERR: &str = "read raw packet error";
         let mut packets = vec![];
-        let mut ptr = 0;
+        let mut cursor = Cursor::new(buffer);
         loop {
-            let (size, _) = read_u32_be(&buffer[ptr..ptr + 4]);
-            let size = size as usize;
-            packets.push(Self::from_buffer(&buffer[ptr..ptr + size]));
-            ptr += size;
-            if ptr >= buffer.len() {
+            let size = cursor.read_u32::<BigEndian>().expect(READ_FAIL_ERR);
+            let header_size = cursor.read_u16::<BigEndian>().expect(READ_FAIL_ERR);
+            let version = cursor.read_u16::<BigEndian>().expect(READ_FAIL_ERR);
+            let opcode = cursor.read_u32::<BigEndian>().expect(READ_FAIL_ERR);
+            let sequence = cursor.read_u32::<BigEndian>().expect(READ_FAIL_ERR);
+            let head = RawPacketHead {
+                size,
+                header_size,
+                proto_code: version,
+                opcode,
+                sequence,
+            };
+            let pos = cursor.position();
+            let body_size = (size as usize) - (header_size as usize);
+            let data = RawPacketData(&buffer[(pos as usize)..(pos as usize) + body_size]);
+            packets.push(RawPacket { head, data });
+            cursor.set_position(pos + body_size as u64);
+            if cursor.position() >= buffer.len() as u64 {
                 break;
             }
         }
         packets
     }
 
-    pub fn build(op: Operation, data: Vec<u8>) -> Self {
+    pub fn build(op: Operation, data: &'p [u8]) -> Self {
         let header_size = 16_u16;
         let size = (16 + data.len()) as u32;
         let opcode = op as u32;
@@ -141,18 +160,34 @@ impl RawPacket {
     }
 
     pub fn ser(self) -> Vec<u8> {
+        const READ_FAIL_ERR: &str = "write raw packet error";
         const HEAD_SIZE: usize = 16;
         let head = self.head;
         let data = self.data.0;
         let mut buffer = Vec::<u8>::with_capacity(128 + data.len());
         buffer.resize(data.len() + HEAD_SIZE, 0);
         let mut writer: &mut [u8] = &mut buffer;
-        writer = write_u32_be(writer, head.size);
-        writer = write_u16_be(writer, head.header_size);
-        writer = write_u16_be(writer, head.proto_code);
-        writer = write_u32_be(writer, head.opcode);
-        writer = write_u32_be(writer, head.sequence);
-        writer.write_all(&data).expect("序列化包时，数据写入错误");
+        writer
+            .write_u32::<BigEndian>(head.size)
+            .expect(READ_FAIL_ERR);
+        writer
+            .write_u16::<BigEndian>(head.header_size)
+            .expect(READ_FAIL_ERR);
+        writer
+            .write_u16::<BigEndian>(head.proto_code)
+            .expect(READ_FAIL_ERR);
+        writer
+            .write_u32::<BigEndian>(head.opcode)
+            .expect(READ_FAIL_ERR);
+        writer
+            .write_u32::<BigEndian>(head.sequence)
+            .expect(READ_FAIL_ERR);
+        // writer = write_u32_be(writer, head.size);
+        // writer = write_u16_be(writer, head.header_size);
+        // writer = write_u16_be(writer, head.proto_code);
+        // writer = write_u32_be(writer, head.opcode);
+        // writer = write_u32_be(writer, head.sequence);
+        writer.write_all(data).expect(READ_FAIL_ERR);
         buffer
     }
 
@@ -160,7 +195,7 @@ impl RawPacket {
         match self.head.proto_code {
             // raw json
             0 => {
-                if let Ok(data_json) = serde_json::from_slice::<serde_json::Value>(&self.data.0) {
+                if let Ok(data_json) = serde_json::from_slice::<serde_json::Value>(self.data.0) {
                     vec![Data::Json(data_json)]
                 } else {
                     // println!("cannot deser {}", String::from_utf8(self.data.0).unwrap() );
@@ -168,8 +203,8 @@ impl RawPacket {
                 }
             }
             1 => {
-                let (bytes, _) = self.data.0.split_array_ref::<4>();
-                let popularity = u32::from_be_bytes(*bytes);
+                let (bytes, _) = self.data.0.split_at(4);
+                let popularity = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
                 vec![Data::Popularity(popularity)]
             }
             2 => {
@@ -183,8 +218,7 @@ impl RawPacket {
                 vec![Data::Deflate("".to_string())]
             }
             3 => {
-                use std::io::Read;
-                let read_stream = std::io::Cursor::new(self.data.0);
+                let read_stream = Cursor::new(self.data.0);
                 let mut input = brotli::Decompressor::new(read_stream, 4096);
                 let mut buffer = Vec::new();
                 match input.read_to_end(&mut buffer) {

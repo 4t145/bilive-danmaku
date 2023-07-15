@@ -1,5 +1,5 @@
 # bilive-danmaku
-这个库提供模拟bilibili直播的wss连接的功能，目前还在开发中
+这个库提供模拟bilibili直播的wss连接的功能，持续迭代中
 
 关于发送弹幕等主动api，可以看我这个仓库: https://github.com/4t145/bilibili-client
 
@@ -9,11 +9,6 @@
 
 这使你可以通过ws来获取事件，计划在未来支持ipc通讯（uds for linux，命名管道 for windows）
 
-### 作为库使用
-因为使用了尚未稳定的`split_array`，所以需要切换到nightly版本
-```
-rustup override set nightly
-```
 在`Cargo.toml`中加入
 ```toml
 bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }

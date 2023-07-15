@@ -94,15 +94,17 @@ impl Connector {
         if self.host_list.is_empty() {
             return Err(ConnectError::HostListIsEmpty);
         }
-        let url = self.host_list[self.host_index].wss();
-        let roomid = self.roomid;
-        let backup = self.clone();
-        let auth = Auth::new(self.uid, roomid, Some(backup.token.clone()));
-        let stream = Connection::connect(url, auth).await.map_err(|e| {
-            log::error!("handshake error: {:?}", e);
-            ConnectError::HandshakeError
-        })?;
-        Ok(stream)
+
+        for host in &self.host_list {
+            let url = host.wss();
+            let auth = Auth::new(self.uid, self.roomid, Some(self.token.clone()));
+            match Connection::connect(url, auth).await {
+                Ok(stream) => return Ok(stream),
+                Err(e) => log::warn!("connect error: {:?}", e),
+            }
+        }
+        log::error!("connect error: all host failed");
+        Err(ConnectError::HandshakeError)
     }
 }
 
