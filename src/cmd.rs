@@ -61,7 +61,9 @@ pub(crate) enum Cmd {
         roomid: u64,
     },
     UserToastMsg {},
-    StopLiveRoomList {},
+    StopLiveRoomList {
+        room_id_list: Vec<u64>,
+    },
     InteractWord {
         fans_medal: Option<FansMedal>,
         #[serde(flatten)]
@@ -416,6 +418,7 @@ impl Cmd {
                 }
                 .into(),
             ),
+            Cmd::StopLiveRoomList { room_id_list } => Some(StopLiveEvent { room_id_list }.into()),
             rest => {
                 log::debug!("unhandled cmd: {:?}", rest);
                 None
