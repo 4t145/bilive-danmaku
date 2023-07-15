@@ -17,7 +17,6 @@ rustup override set nightly
 在`Cargo.toml`中加入
 ```toml
 bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
-tokio = "^1.24.1"
 ```
 使用
 ```rust
@@ -48,64 +47,10 @@ use model::{User, FansMedal};
 use event::Event as BiliEvent;
 ```
 ## 已经支持的事件
+[参考这个文件](./src/event.rs)
 
-
-```rust
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "tag", content="data")]
-pub enum EventData {
-    Danmaku {
-        flag: u64,
-        message: DanmakuMessage,
-        user: User,
-        fans_medal: Option<FansMedal>
-    },
-    EnterRoom {
-        user: User,
-        fans_medal: Option<FansMedal>
-    },
-    Gift {
-        user: User,
-        fans_medal: Option<FansMedal>,
-        gift: Gift,
-    },
-    GuardBuy {
-        level: u64,
-        price: u64,
-        user: User
-    },
-    SuperChat {
-        user: User,
-        fans_medal: Option<FansMedal>,
-        price: u64, 
-        message: String,
-        message_jpn: Option<String>
-    },
-    WatchedUpdate {
-        num: u64
-    },
-    PopularityUpdate {
-        popularity: u32,
-    },
-    GuardEnterRoom {
-        user: User,
-    },
-    HotRankChanged {
-        area: String,
-        rank: u64,
-        description: String,
-    },
-    HotRankSettlement {
-        uname: String,
-        face: String,
-        area: String,
-        rank: u64,
-    },
-}
-```
 可参考：
-- [命令原始数据](./src//tests/mock/cmd/)
-- [源文件](./src/event.rs)
+- [命令原始数据](./src/tests/mock/cmd/)
 
 ## feature flag
 |flag|功能|
@@ -122,4 +67,19 @@ pub enum EventData {
 [dependencies.bilive-danmaku]
 # ****
 features = ["rt_tokio", "json"]
+```
+
+# 提交代码
+提交代码请fork一份，在自己的那一份签出新分支，然后提交到master分支
+
+提交前请进行格式化和clippy check，可以直接运行根目录的脚本文件
+
+windows
+```ps1
+./fix-all
+```
+
+linux
+```bash
+bash fix-all.sh
 ```
