@@ -25,4 +25,5 @@ jobs:
           CRATE_NAME: ${{ secrets.CRATE_NAME  }}
           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
         run: |
+          cargo publish --manifest-path $CRATE_NAME/Cargo.toml --token $CRATES_IO_TOKEN --dry-run
           cargo publish --manifest-path $CRATE_NAME/Cargo.toml --token $CRATES_IO_TOKEN
