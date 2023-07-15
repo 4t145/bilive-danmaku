@@ -70,7 +70,7 @@ features = ["rt_tokio", "json"]
 提交前请进行格式化和clippy check，可以直接运行根目录的脚本文件
 
 windows
-```ps1
+```shell
 ./fix-all
 ```
 

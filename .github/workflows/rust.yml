@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install Rust nightly
+    - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable

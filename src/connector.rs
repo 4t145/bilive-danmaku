@@ -57,7 +57,7 @@ impl Connector {
             .json::<RoomPlayInfo>()
             .await?
             .data
-            .ok_or(InitError::ParseError(format!("Fail to get room info")))?;
+            .ok_or(InitError::ParseError("Fail to get room info".to_string()))?;
         roomid = real_room_id;
         let url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0",
@@ -70,7 +70,7 @@ impl Connector {
             .json::<DanmuInfo>()
             .await?
             .data
-            .ok_or(InitError::ParseError(format!("Fail to get danmu info")))?;
+            .ok_or(InitError::ParseError("Fail to get danmu info".to_string()))?;
         let connector = Connector {
             uid,
             host_index: 0,
