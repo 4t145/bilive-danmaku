@@ -11,7 +11,7 @@
 
 在`Cargo.toml`中加入
 ```toml
-bilive-danmaku = { git = "https://github.com/4t145/bilive-danmaku", branch = "master" }
+bilive-danmaku = { version = "0.3", features = ["rt_tokio"] }
 ```
 使用
 ```rust
