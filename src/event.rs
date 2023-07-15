@@ -89,7 +89,7 @@ define_event! {
         rank: u64,
     },
     StopLiveEvent{
-        list: Vec<u64>
+        room_id_list: Vec<u64>
     }
 }
 
@@ -135,9 +135,10 @@ impl Event {
 }
 
 #[cfg(feature = "rt_wasm")]
-impl Into<wasm_bindgen::JsValue> for Event {
-    fn into(self) -> wasm_bindgen::JsValue {
-        serde_wasm_bindgen::to_value(&self).unwrap()
+impl From<Event> for wasm_bindgen::JsValue {
+    fn from(val: Event) -> Self {
+        serde_wasm_bindgen::to_value(&val)
+            .expect("this should not happen, event data are defined by ourselves")
     }
 }
 

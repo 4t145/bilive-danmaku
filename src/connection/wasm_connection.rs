@@ -8,7 +8,7 @@ use std::collections::VecDeque;
 
 // use tungstenite;
 use crate::{
-    connector::WsConnectError,
+    connection::WsConnectError,
     event::Event,
     packet::{Auth, Operation, RawPacket},
 };
@@ -41,47 +41,47 @@ impl Stream for WasmConnection {
             Ready(Some(Ok(Bytes(bin)))) => {
                 let packet = RawPacket::from_buffer(&bin);
                 for data in packet.get_datas() {
-                    match data.to_event() {
-                        Ok(Some(event)) => self.buffer.push_back(Ok(event)),
-                        _ => {}
+                    if let Ok(Some(event)) = data.into_event() {
+                        self.buffer.push_back(Ok(event))
                     }
                 }
-                return self.poll_next(cx);
+                self.poll_next(cx)
             }
             // Ready(Some(Ok(Close(_)))) => return Ready(Some(Err(ConnectionClosed))),
             // 这不太可能发生，可能要标记一下
-            Ready(Some(Ok(_))) => return self.poll_next(cx),
+            Ready(Some(Ok(_))) => self.poll_next(cx),
             // 错误
-            Ready(Some(Err(e))) => return Ready(Some(Err(WsError(e.to_string())))),
+            Ready(Some(Err(e))) => Ready(Some(Err(WsError(e.to_string())))),
             // 接受到None
-            Ready(None) => {
-                return Ready(None);
-            }
-            Pending => return Pending,
+            Ready(None) => Ready(None),
+            Pending => Pending,
         }
+    }
+}
+
+impl From<gloo_utils::errors::JsError> for WsConnectError {
+    fn from(value: gloo_utils::errors::JsError) -> Self {
+        WsConnectError::JsError(value)
+    }
+}
+
+impl From<gloo_net::websocket::WebSocketError> for WsConnectError {
+    fn from(value: gloo_net::websocket::WebSocketError) -> Self {
+        WsConnectError::WsError(value)
     }
 }
 impl WasmConnection {
     pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
         use gloo_net::websocket::Message::*;
-        let conn_result = WebSocket::open(url.as_str());
-        let ws_stream = match conn_result {
-            Ok(stream) => stream,
-            Err(_e) => {
-                return Err(WsConnectError::FailToConnect);
-            }
-        };
+        let ws_stream = WebSocket::open(url.as_str())?;
 
         let (mut tx, mut rx) = ws_stream.split();
         let authpack_bin = RawPacket::build(Operation::Auth, auth.ser()).ser();
-        tx.send(Bytes(authpack_bin))
-            .await
-            .map_err(|_| WsConnectError::FailToSendAuth)?;
+        tx.send(Bytes(authpack_bin)).await?;
         let _auth_reply = match rx.next().await {
             Some(Ok(Bytes(auth_reply_bin))) => RawPacket::from_buffer(&auth_reply_bin),
-            _other @ _ => {
-                // exception.send(Exception::FailToAuth).await.unwrap();
-                return Err(WsConnectError::FailToAuth);
+            _other => {
+                return Err(WsConnectError::UnexpecedEnd);
             }
         };
         // hb task
@@ -91,15 +91,17 @@ impl WasmConnection {
             let mut interval = IntervalStream::new(30000);
             loop {
                 interval.next().await;
-                tx.send(Bytes(RawPacket::heartbeat().ser())).await.unwrap();
+                tx.send(Bytes(RawPacket::heartbeat().ser()))
+                    .await
+                    .expect("fail to send heart beat ");
             }
         };
         // let hb = spawn_local();
-        return Ok(WasmConnection {
+        Ok(WasmConnection {
             ws_rx: rx,
             hb_handle: future_to_promise(hb),
             buffer: VecDeque::with_capacity(256),
-        });
+        })
     }
 
     pub fn abort(self) {

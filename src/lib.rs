@@ -22,9 +22,9 @@
 #[cfg(feature = "connect")]
 pub mod connection;
 #[cfg(feature = "connect")]
-mod room;
+mod connector;
 #[cfg(feature = "connect")]
-pub use crate::room::*;
+pub use crate::connector::*;
 #[cfg(feature = "connect")]
 pub use connection::Connection;
 #[cfg(feature = "connect")]
@@ -39,4 +39,8 @@ pub mod model;
 mod tests;
 
 #[cfg(feature = "connect")]
+mod error;
+#[cfg(feature = "connect")]
 mod packet;
+#[cfg(feature = "connect")]
+pub use error::Error;
