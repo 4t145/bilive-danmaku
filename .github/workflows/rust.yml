@@ -2,9 +2,9 @@ name: Rust Check
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "publish" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "publish" ]
 
 env:
   CARGO_TERM_COLOR: always
