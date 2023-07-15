@@ -64,7 +64,13 @@ version = "0.3"
 
 [features]
 default = ["event"]
-connect = ["dep:futures-util", "dep:brotli", "dep:reqwest", "event", "byteorder"]
+connect = [
+    "dep:futures-util",
+    "dep:brotli",
+    "dep:reqwest",
+    "event",
+    "byteorder",
+]
 rt_tokio = ["connect", "dep:tokio", "dep:tokio-tungstenite", "reqwest?/default"]
 rt_wasm = [
     "connect",
@@ -82,4 +88,4 @@ deflate = ["dep:deflate", "connect"]
 event = []
 json = []
 [dev-dependencies]
-env_logger = "*"
+env_logger = "0.10"
