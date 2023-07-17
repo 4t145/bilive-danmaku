@@ -1,4 +1,15 @@
 # bilive-danmaku
+[![Crates.io][crates-badge]][crates-url]
+[![Publish][ci-publish-badge]][ci-publish-url]
+[![Build][ci-build-badge]][ci-build-url]
+
+[crates-badge]: https://img.shields.io/crates/v/bilive-danmaku.svg
+[crates-url]: https://crates.io/crates/bilive-danmaku
+[ci-publish-badge]: https://github.com/4t145/bilive-danmaku/actions/workflows/publish.yml/badge.svg?branch=publish
+[ci-publish-url]: https://github.com/4t145/bilive-danmaku/actions/workflows/publish.yml/?branch=publish
+[ci-build-badge]: https://github.com/4t145/bilive-danmaku/actions/workflows/rust.yml/badge.svg?branch=master
+[ci-build-url]: https://github.com/4t145/bilive-danmaku/actions/workflows/rust.yml/?branch=master
+
 这个库提供模拟bilibili直播的wss连接的功能，持续迭代中
 
 关于发送弹幕等主动api，可以看我这个仓库: https://github.com/4t145/bilibili-client
