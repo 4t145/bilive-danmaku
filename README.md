@@ -31,7 +31,7 @@ use futures_util::StreamExt;
 
 async fn tokio_main() {
     let roomid = 851181;
-    let connector = Connector::init(roomid).await.unwrap();
+    let connector = Connector::init(roomid, None).await.unwrap();
     let mut stream = connector.connect().await.unwrap();
     while let Some(maybe_evt) = stream.next().await {
         match maybe_evt {

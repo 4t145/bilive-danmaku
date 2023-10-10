@@ -59,12 +59,14 @@ impl std::error::Error for EventStreamError {}
 #[derive(Debug, Clone)]
 pub struct LoginInfo {
     // SESSDATA
-    sessdata: String,
+    pub sessdata: String,
+    // uid
+    pub uid: u64,
 }
 
 impl LoginInfo {
-    pub fn new(sessdata: String) -> Self {
-        Self { sessdata }
+    pub fn new(uid: u64, sessdata: String) -> Self {
+        Self { sessdata, uid }
     }
     pub fn inject(&self, mut request: Request) -> Request {
         let cookie = HeaderValue::from_str(&format!("SESSDATA={}", self.sessdata)).expect("invalid sessdata");

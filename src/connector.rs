@@ -43,7 +43,7 @@ impl std::fmt::Display for InitError {
 }
 
 impl Connector {
-    pub async fn init(mut roomid: u64) -> Result<Self, InitError> {
+    pub async fn init(mut roomid: u64, login_info: Option<LoginInfo>) -> Result<Self, InitError> {
         let client = reqwest::Client::new();
         let room_info_url = format!(
             "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}",
@@ -73,13 +73,14 @@ impl Connector {
             .await?
             .data
             .ok_or(InitError::ParseError("Fail to get danmu info".to_string()))?;
+        let uid = login_info.as_ref().map(|x| x.uid).unwrap_or(uid);
         let connector = Connector {
             uid,
             host_index: 0,
             roomid,
             token,
             host_list,
-            login_info: None,
+            login_info,
         };
         Ok(connector)
     }
