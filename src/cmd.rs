@@ -175,7 +175,7 @@ impl Cmd {
                     "DANMU_MSG" => {
                         // 如果这里出问题，可能是b站协议发生变更了，所以panic一下无可厚非吧
                         let info = val["info"].as_array().expect(PROTOCOL_ERROR);
-                        let message = info[1].as_str().expect(PROTOCOL_ERROR).clone();
+                        let message = info[1].as_str().expect(PROTOCOL_ERROR);
                         let user = info[2].as_array().expect(PROTOCOL_ERROR);
                         let uid = user[0].as_u64().expect(PROTOCOL_ERROR);
                         let name = user[1].as_str().expect(PROTOCOL_ERROR);

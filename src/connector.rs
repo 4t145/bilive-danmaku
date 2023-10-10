@@ -1,3 +1,4 @@
+use reqwest::Url;
 use serde::Deserialize;
 
 use crate::{connection::*, packet::*};
@@ -9,6 +10,7 @@ pub struct Connector {
     pub token: String,
     pub host_index: usize,
     pub host_list: Vec<Host>,
+    pub login_info: Option<LoginInfo>,
 }
 
 #[derive(Debug)]
@@ -77,8 +79,13 @@ impl Connector {
             roomid,
             token,
             host_list,
+            login_info: None,
         };
         Ok(connector)
+    }
+
+    pub fn set_login_info(&mut self, login_info: LoginInfo) {
+        self.login_info = Some(login_info);
     }
 
     pub fn use_host(&mut self, index: usize) -> Result<&'_ str, usize> {
@@ -98,7 +105,7 @@ impl Connector {
         for host in &self.host_list {
             let url = host.wss();
             let auth = Auth::new(self.uid, self.roomid, Some(self.token.clone()));
-            match Connection::connect(url, auth).await {
+            match Connection::connect(url, auth, self.login_info.as_ref()).await {
                 Ok(stream) => return Ok(stream),
                 Err(e) => log::warn!("connect error: {:?}", e),
             }
@@ -144,10 +151,10 @@ pub struct Host {
 }
 
 impl Host {
-    fn wss(&self) -> String {
+    fn wss(&self) -> Url {
         let host = &self.host;
         let port = self.wss_port;
-        format!("wss://{host}:{port}/sub")
+        Url::parse(&format!("wss://{host}:{port}/sub")).expect("invalid url")
     }
 }
 

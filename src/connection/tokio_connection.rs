@@ -1,5 +1,6 @@
 use super::*;
 use futures_util::{stream::SplitStream, SinkExt, Stream, StreamExt};
+use reqwest::Url;
 use std::collections::VecDeque;
 // use tungstenite;
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     packet::{Auth, Operation, RawPacket},
 };
 use tokio_tungstenite as tokio_ws2;
-use tokio_ws2::tungstenite as ws2;
+use tokio_ws2::tungstenite::{self as ws2, client::IntoClientRequest};
 type WsStream = tokio_ws2::WebSocketStream<tokio_ws2::MaybeTlsStream<tokio::net::TcpStream>>;
 type WsRx = SplitStream<WsStream>;
 
@@ -63,11 +64,18 @@ impl From<ws2::Error> for WsConnectError {
         WsConnectError::WsError(val)
     }
 }
+use tokio::time::Duration;
+// 30s 发送一次心跳包
+const HB_RATE: Duration = Duration::from_secs(30);
 
 impl TokioConnection {
-    pub async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError> {
+    pub async fn connect(url: Url, auth: Auth, login_info: Option<&LoginInfo>) -> Result<Self, WsConnectError> {
         use ws2::Message::*;
-        let (mut ws_stream, _resp) = tokio_ws2::connect_async(url).await?;
+        let mut req = url.into_client_request()?;
+        if let Some(login_info) = login_info {
+            req = login_info.inject(req);
+        }
+        let (mut ws_stream, _resp) = tokio_ws2::connect_async(req).await?;
         let authpack_bin = RawPacket::build(Operation::Auth, &auth.ser()).ser();
         ws_stream.send(Binary(authpack_bin)).await?;
         let resp = ws_stream.next().await.ok_or_else(|| {
@@ -87,8 +95,7 @@ impl TokioConnection {
         // hb task
         let hb = async move {
             use tokio::time::*;
-            // 30s 发送一次
-            let mut interval = interval(Duration::from_secs(30));
+            let mut interval = interval(HB_RATE);
             loop {
                 interval.tick().await;
                 tx.send(ws2::Message::Binary(RawPacket::heartbeat().ser()))
@@ -104,6 +111,12 @@ impl TokioConnection {
     }
 
     pub fn abort(self) {
+        drop(self)
+    }
+}
+
+impl Drop for TokioConnection {
+    fn drop(&mut self) {
         self.hb_handle.abort();
     }
 }

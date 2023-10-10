@@ -56,12 +56,31 @@ impl std::error::Error for EventStreamError {}
 //     fn abort(self);
 // }
 
+#[derive(Debug, Clone)]
+pub struct LoginInfo {
+    // SESSDATA
+    sessdata: String,
+}
+
+impl LoginInfo {
+    pub fn new(sessdata: String) -> Self {
+        Self { sessdata }
+    }
+    pub fn inject(&self, mut request: Request) -> Request {
+        let cookie = HeaderValue::from_str(&format!("SESSDATA={}", self.sessdata)).expect("invalid sessdata");
+        request.headers_mut().append(COOKIE, cookie);
+        request
+    }
+}
+
 #[cfg(feature = "rt_tokio")]
 mod tokio_connection;
+use reqwest::header::{COOKIE, HeaderValue};
 #[cfg(feature = "rt_tokio")]
 pub use tokio_connection::TokioConnection as Connection;
 
 #[cfg(feature = "rt_wasm")]
 mod wasm_connection;
+use tokio_tungstenite::tungstenite::handshake::client::Request;
 #[cfg(feature = "rt_wasm")]
 pub use wasm_connection::WasmConnection as Connection;
