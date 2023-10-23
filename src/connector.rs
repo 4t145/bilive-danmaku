@@ -1,16 +1,15 @@
-use reqwest::Url;
-use serde::Deserialize;
-
+use bilibili_client::{reqwest_client::LoginInfo, api::live::{danmu_info::RoomPlayInfo, room_play_info::{DanmuInfoData, Host}}};
 use crate::{connection::*, packet::*};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Connector {
     pub roomid: u64,
     pub uid: u64,
     pub token: String,
     pub host_index: usize,
     pub host_list: Vec<Host>,
-    pub login_info: Option<LoginInfo>,
+    pub login_info: LoginInfo,
+    pub client: bilibili_client::reqwest_client::Client,
 }
 
 #[derive(Debug)]
@@ -43,38 +42,17 @@ impl std::fmt::Display for InitError {
 }
 
 impl Connector {
-    pub async fn init(mut roomid: u64, login_info: Option<LoginInfo>) -> Result<Self, InitError> {
-        let client = reqwest::Client::new();
-        let room_info_url = format!(
-            "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id={}",
-            roomid
-        );
-        let RoomPlayInfoData {
-            room_id: real_room_id,
-            uid,
-        } = client
-            .get(room_info_url)
-            .send()
-            .await?
-            .json::<RoomPlayInfo>()
-            .await?
-            .data
-            .ok_or(InitError::ParseError("Fail to get room info".to_string()))?;
-        roomid = real_room_id;
-        let url = format!(
-            "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0",
-            roomid
-        );
-        let DanmuInfoData { token, host_list } = client
-            .get(url)
-            .send()
-            .await?
-            .json::<DanmuInfo>()
-            .await?
-            .data
-            .ok_or(InitError::ParseError("Fail to get danmu info".to_string()))?;
-        let uid = login_info.as_ref().map(|x| x.uid).unwrap_or(uid);
+    pub async fn init(mut roomid: u64, login_info: LoginInfo) -> bilibili_client::reqwest_client::ClientResult<Self> {
+        let client = bilibili_client::reqwest_client::Client::default();
+        client.set_login_info(&login_info);
+        let RoomPlayInfo { room_id, uid } = client.get_room_play_info(roomid).await?;
+        roomid = room_id;
+        let DanmuInfoData {
+            token,
+            host_list,
+        } = client.get_danmu_info(room_id).await?;
         let connector = Connector {
+            client,
             uid,
             host_index: 0,
             roomid,
@@ -86,7 +64,7 @@ impl Connector {
     }
 
     pub fn set_login_info(&mut self, login_info: LoginInfo) {
-        self.login_info = Some(login_info);
+        self.login_info = login_info;
     }
 
     pub fn use_host(&mut self, index: usize) -> Result<&'_ str, usize> {
@@ -106,56 +84,13 @@ impl Connector {
         for host in &self.host_list {
             let url = host.wss();
             let auth = Auth::new(self.uid, self.roomid, Some(self.token.clone()));
-            match Connection::connect(url, auth, self.login_info.as_ref()).await {
+            match Connection::connect(url, auth, self).await {
                 Ok(stream) => return Ok(stream),
                 Err(e) => log::warn!("connect error: {:?}", e),
             }
         }
         log::error!("connect error: all host failed");
         Err(ConnectError::HandshakeError)
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct RoomPlayInfoData {
-    room_id: u64,
-    uid: u64,
-}
-
-///
-/// api url:
-/// https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo?room_id=510
-#[derive(Debug, Deserialize)]
-struct RoomPlayInfo {
-    data: Option<RoomPlayInfoData>,
-}
-
-#[derive(Debug, Deserialize)]
-struct DanmuInfo {
-    // code: i32,
-    // message: String,
-    // ttl: i32,
-    data: Option<DanmuInfoData>,
-}
-#[derive(Debug, Deserialize)]
-
-struct DanmuInfoData {
-    // max_delay: i32,
-    token: String,
-    host_list: Vec<Host>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Host {
-    pub host: String,
-    pub wss_port: u16,
-}
-
-impl Host {
-    fn wss(&self) -> Url {
-        let host = &self.host;
-        let port = self.wss_port;
-        Url::parse(&format!("wss://{host}:{port}/sub")).expect("invalid url")
     }
 }
 

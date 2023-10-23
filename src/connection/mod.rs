@@ -45,35 +45,6 @@ impl std::fmt::Display for EventStreamError {
 }
 
 impl std::error::Error for EventStreamError {}
-// #[async_trait]
-// pub trait Connector: Stream<Item = Result<Event, EventStreamError>> + StreamExt
-// where
-//     Self: Sized,
-// {
-//     /// 连接
-//     // async fn connect(url: String, auth: Auth) -> Result<Self, WsConnectError>;
-//     /// abort所有任务
-//     fn abort(self);
-// }
-
-#[derive(Debug, Clone)]
-pub struct LoginInfo {
-    // SESSDATA
-    pub sessdata: String,
-    // uid
-    pub uid: u64,
-}
-
-impl LoginInfo {
-    pub fn new(uid: u64, sessdata: String) -> Self {
-        Self { sessdata, uid }
-    }
-    pub fn inject(&self, mut request: Request) -> Request {
-        let cookie = HeaderValue::from_str(&format!("SESSDATA={}", self.sessdata)).expect("invalid sessdata");
-        request.headers_mut().append(COOKIE, cookie);
-        request
-    }
-}
 
 #[cfg(feature = "rt_tokio")]
 mod tokio_connection;

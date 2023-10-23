@@ -23,7 +23,7 @@ async fn tokio_main() {
     let roomid = std::env::var("room_id")
         .map(|s| str::parse::<u64>(&s).expect("invalid room id"))
         .unwrap_or(read_roomid());
-    let connector = Connector::init(roomid, None).await.unwrap();
+    let connector = Connector::init(roomid, Default::default()).await.unwrap();
     let mut stream = connector.connect().await.unwrap();
     while let Some(maybe_evt) = stream.next().await {
         match maybe_evt {

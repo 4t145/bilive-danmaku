@@ -1,12 +1,14 @@
 use super::*;
+use bilibili_client::reqwest_client::LoginInfo;
 use futures_util::{stream::SplitStream, SinkExt, Stream, StreamExt};
-use reqwest::Url;
+use reqwest::{Method, Url};
 use std::collections::VecDeque;
 // use tungstenite;
 use crate::{
     connection::WsConnectError,
     event::Event,
     packet::{Auth, Operation, RawPacket},
+    Connector,
 };
 use tokio_tungstenite as tokio_ws2;
 use tokio_ws2::tungstenite::{self as ws2, client::IntoClientRequest};
@@ -69,12 +71,28 @@ use tokio::time::Duration;
 const HB_RATE: Duration = Duration::from_secs(30);
 
 impl TokioConnection {
-    pub async fn connect(url: Url, auth: Auth, login_info: Option<&LoginInfo>) -> Result<Self, WsConnectError> {
+    pub async fn connect(
+        url: Url,
+        auth: Auth,
+        connector: &Connector,
+    ) -> Result<Self, WsConnectError> {
         use ws2::Message::*;
-        let mut req = url.into_client_request()?;
-        if let Some(login_info) = login_info {
-            req = login_info.inject(req);
-        }
+        let reqwest_req = connector
+            .client
+            .inner()
+            .request(Method::GET, url)
+            .build()
+            .expect("shouldn't build fail");
+        let mut http_req_builder = http::Request::builder();
+        http_req_builder
+            .headers_mut()
+            .map(|h| *h = reqwest_req.headers().clone())
+            .expect("should have headers");
+        let req = http_req_builder
+            .uri(reqwest_req.url().as_str())
+            .method("GET")
+            .body(())
+            .expect("shouldn't fail to build ssh req body");
         let (mut ws_stream, _resp) = tokio_ws2::connect_async(req).await?;
         let authpack_bin = RawPacket::build(Operation::Auth, &auth.ser()).ser();
         ws_stream.send(Binary(authpack_bin)).await?;
