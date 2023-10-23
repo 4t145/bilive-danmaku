@@ -12,35 +12,6 @@ pub struct Connector {
     pub client: bilibili_client::reqwest_client::Client,
 }
 
-#[derive(Debug)]
-pub enum InitError {
-    ParseError(String),
-    HttpError(reqwest::Error),
-    DeserError(serde_json::Error),
-}
-
-impl From<serde_json::Error> for InitError {
-    fn from(val: serde_json::Error) -> Self {
-        InitError::DeserError(val)
-    }
-}
-
-impl From<reqwest::Error> for InitError {
-    fn from(err: reqwest::Error) -> Self {
-        InitError::HttpError(err)
-    }
-}
-
-impl std::fmt::Display for InitError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InitError::ParseError(msg) => write!(f, "ParseError: {}", msg),
-            InitError::HttpError(err) => write!(f, "HttpError: {}", err),
-            InitError::DeserError(err) => write!(f, "DeserError: {}", err),
-        }
-    }
-}
-
 impl Connector {
     pub async fn init(mut roomid: u64, login_info: LoginInfo) -> bilibili_client::reqwest_client::ClientResult<Self> {
         let client = bilibili_client::reqwest_client::Client::default();

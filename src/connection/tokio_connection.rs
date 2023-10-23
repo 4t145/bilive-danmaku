@@ -1,5 +1,4 @@
 use super::*;
-use bilibili_client::reqwest_client::LoginInfo;
 use futures_util::{stream::SplitStream, SinkExt, Stream, StreamExt};
 use reqwest::{Method, Url};
 use std::collections::VecDeque;
@@ -11,7 +10,7 @@ use crate::{
     Connector,
 };
 use tokio_tungstenite as tokio_ws2;
-use tokio_ws2::tungstenite::{self as ws2, client::IntoClientRequest};
+use tokio_ws2::tungstenite as ws2;
 type WsStream = tokio_ws2::WebSocketStream<tokio_ws2::MaybeTlsStream<tokio::net::TcpStream>>;
 type WsRx = SplitStream<WsStream>;
 

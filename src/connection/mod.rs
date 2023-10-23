@@ -48,12 +48,10 @@ impl std::error::Error for EventStreamError {}
 
 #[cfg(feature = "rt_tokio")]
 mod tokio_connection;
-use reqwest::header::{COOKIE, HeaderValue};
 #[cfg(feature = "rt_tokio")]
 pub use tokio_connection::TokioConnection as Connection;
 
 #[cfg(feature = "rt_wasm")]
 mod wasm_connection;
-use tokio_tungstenite::tungstenite::handshake::client::Request;
 #[cfg(feature = "rt_wasm")]
 pub use wasm_connection::WasmConnection as Connection;
