@@ -89,7 +89,11 @@ impl TokioConnection {
             .expect("should have headers");
         let req = http_req_builder
             .uri(reqwest_req.url().as_str())
-            .method("GET")
+            .header("Host", reqwest_req.url().host_str().unwrap_or_default())
+            .header("Connection", "Upgrade")
+            .header("Upgrade", "websocket")
+            .header("Sec-WebSocket-Version", "13")
+            .header("Sec-WebSocket-Key", ws2::handshake::client::generate_key())
             .body(())
             .expect("shouldn't fail to build ssh req body");
         let (mut ws_stream, _resp) = tokio_ws2::connect_async(req).await?;
