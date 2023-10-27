@@ -1,5 +1,11 @@
-use bilibili_client::{reqwest_client::LoginInfo, api::live::{danmu_info::RoomPlayInfo, room_play_info::{DanmuInfoData, Host}}};
 use crate::{connection::*, packet::*};
+use bilibili_client::{
+    api::live::{
+        danmu_info::RoomPlayInfo,
+        room_play_info::{DanmuInfoData, Host},
+    },
+    reqwest_client::LoginInfo,
+};
 
 #[derive(Clone)]
 pub struct Connector {
@@ -13,15 +19,15 @@ pub struct Connector {
 }
 
 impl Connector {
-    pub async fn init(mut roomid: u64, login_info: LoginInfo) -> bilibili_client::reqwest_client::ClientResult<Self> {
+    pub async fn init(
+        mut roomid: u64,
+        login_info: LoginInfo,
+    ) -> bilibili_client::reqwest_client::ClientResult<Self> {
         let client = bilibili_client::reqwest_client::Client::default();
         client.set_login_info(&login_info);
         let RoomPlayInfo { room_id, uid } = client.get_room_play_info(roomid).await?;
         roomid = room_id;
-        let DanmuInfoData {
-            token,
-            host_list,
-        } = client.get_danmu_info(room_id).await?;
+        let DanmuInfoData { token, host_list } = client.get_danmu_info(room_id).await?;
         let connector = Connector {
             client,
             uid,
