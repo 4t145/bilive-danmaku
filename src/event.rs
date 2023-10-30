@@ -1,7 +1,7 @@
 use crate::model::*;
 
 use serde::{Deserialize, Serialize};
-
+use std::hash::Hash;
 macro_rules! define_event {
     ($(
         $name:ident{$(
@@ -9,14 +9,14 @@ macro_rules! define_event {
             $arg:ident: $ty:ty
         ),*$(,)?}
     ),*$(,)?) => {
-        #[derive(Clone, Debug, Serialize, Deserialize)]
+        #[derive(Clone, Debug, Serialize, Deserialize, Hash)]
         #[serde(tag = "cmd", content="data")]
         pub enum EventData {
             $($name ($name)),*
         }
 
         $(
-            #[derive(Clone, Debug, Serialize, Deserialize)]
+            #[derive(Clone, Debug, Serialize, Deserialize, Hash)]
             pub struct $name {
                 $(
                     $(#[$attrs])*

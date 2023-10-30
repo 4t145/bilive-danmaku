@@ -64,7 +64,7 @@ version = "0.3"
 
 [dependencies.bilibili-client]
 git = "https://github.com/4t145/bilibili-client.git"
-rev = "32edfa6"
+rev = "7cd2683"
 features = ["live"]
 default-features = false
 
@@ -95,3 +95,4 @@ event = []
 json = []
 [dev-dependencies]
 env_logger = "0.10"
+toml = "0.8.6"

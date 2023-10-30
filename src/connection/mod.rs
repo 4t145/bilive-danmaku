@@ -51,6 +51,9 @@ mod tokio_connection;
 #[cfg(feature = "rt_tokio")]
 pub use tokio_connection::TokioConnection as Connection;
 
+// #[cfg(feature = "rt_tokio")]
+// pub mod multi_stream;
+
 #[cfg(feature = "rt_wasm")]
 mod wasm_connection;
 #[cfg(feature = "rt_wasm")]

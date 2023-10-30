@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct Emoticon {
     pub unique_id: String,
     pub height: u64,
@@ -13,7 +13,7 @@ pub struct Emoticon {
 /// # 说明
 /// - `guard_level`字段，1，2，3分别为总督，提督，舰长；0为无。
 /// - `anchor_roomid` 大航海房间id
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct FansMedal {
     pub anchor_roomid: u64,
     #[serde(default)]
@@ -22,27 +22,27 @@ pub struct FansMedal {
     pub medal_name: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct User {
     pub uid: u64,
     pub uname: String,
     pub face: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Hash)]
 pub(crate) struct SuperChatUser {
     pub(crate) uname: String,
     pub(crate) face: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum CoinType {
     Silver,
     Gold,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Hash)]
 pub struct Gift {
     pub coin_type: CoinType,
     pub coin_count: u64,
@@ -53,14 +53,14 @@ pub struct Gift {
     pub price: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Hash)]
 pub struct GiftType {
     pub action: String,
     pub gift_name: String,
     pub gift_id: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Hash)]
 #[serde(tag = "tag", content = "data")]
 pub enum DanmakuMessage {
     Plain {
