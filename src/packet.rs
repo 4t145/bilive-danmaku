@@ -48,7 +48,7 @@ impl Display for EventParseError {
 }
 
 impl Data {
-    pub fn into_event(self) -> Result<Option<Event>, EventParseError> {
+    pub fn into_event_data(self) -> Result<Option<EventData>, EventParseError> {
         let data = match self {
             Data::Json(json_val) => match crate::cmd::Cmd::deser(json_val) {
                 Ok(cmd) => cmd.into_event(),
@@ -57,7 +57,7 @@ impl Data {
             Data::Popularity(popularity) => Some(PopularityUpdateEvent { popularity }.into()),
             Data::Deflate(_) => return Err(EventParseError::DeflateMessage),
         };
-        Ok(data.map(Into::into))
+        Ok(data)
     }
 }
 
@@ -269,19 +269,19 @@ pub enum Operation {
 }
 
 use serde::Serialize;
-
+const PLATFORM_WEB: &str = "web";
 use crate::{
     cmd::CmdDeserError,
-    event::{Event, PopularityUpdateEvent},
+    event::{EventData, PopularityUpdateEvent},
 };
 #[derive(Debug, Clone, Serialize)]
 pub struct Auth {
-    uid: u64,
-    roomid: u64,
-    protover: i32,
-    platform: &'static str,
-    r#type: i32,
-    key: Option<String>,
+    pub uid: u64,
+    pub roomid: u64,
+    pub protover: i32,
+    pub platform: &'static str,
+    pub r#type: i32,
+    pub key: Option<String>,
 }
 
 impl Auth {
@@ -290,7 +290,7 @@ impl Auth {
             uid,
             roomid,
             protover: 3,
-            platform: "web",
+            platform: PLATFORM_WEB,
             r#type: 2,
             key,
         }

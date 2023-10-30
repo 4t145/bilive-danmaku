@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 // use tungstenite;
 use crate::{
     connection::WsConnectError,
-    event::Event,
+    event::{Event, EventMeta, EventSource},
     packet::{Auth, Operation, RawPacket},
     Connector,
 };
@@ -15,6 +15,7 @@ type WsStream = tokio_ws2::WebSocketStream<tokio_ws2::MaybeTlsStream<tokio::net:
 type WsRx = SplitStream<WsStream>;
 
 pub struct TokioConnection {
+    source: EventSource,
     ws_rx: WsRx,
     hb_handle: tokio::task::JoinHandle<()>,
     buffer: VecDeque<Result<Event, EventStreamError>>, // rx_handle: tokio::task::JoinHandle<()>,
@@ -38,8 +39,14 @@ impl Stream for TokioConnection {
             Ready(Some(Ok(Binary(bin)))) => {
                 let packet = RawPacket::from_buffer(&bin);
                 for data in packet.get_datas() {
-                    match data.into_event() {
-                        Ok(Some(event)) => self.buffer.push_back(Ok(event)),
+                    match data.into_event_data() {
+                        Ok(Some(event)) => {
+                            let source = self.source.clone();
+                            self.buffer.push_back(Ok(Event {
+                                data: event,
+                                meta: EventMeta::with_source(source),
+                            }))
+                        }
                         Ok(None) => {}
                         Err(e) => {
                             log::warn!("解析数据包失败：{}", e);
@@ -76,10 +83,11 @@ impl TokioConnection {
         connector: &Connector,
     ) -> Result<Self, WsConnectError> {
         use ws2::Message::*;
+        let room_id = auth.roomid;
         let reqwest_req = connector
             .client
             .inner()
-            .request(Method::GET, url)
+            .request(Method::GET, url.clone())
             .build()
             .expect("shouldn't build fail");
         let mut http_req_builder = http::Request::builder();
@@ -125,6 +133,10 @@ impl TokioConnection {
             }
         };
         Ok(TokioConnection {
+            source: EventSource {
+                room_id,
+                url,
+            },
             ws_rx: rx,
             hb_handle: tokio::spawn(hb),
             buffer: VecDeque::with_capacity(256),

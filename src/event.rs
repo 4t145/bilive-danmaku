@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::model::*;
 
 use serde::{Deserialize, Serialize};
@@ -88,29 +90,64 @@ define_event! {
         area: String,
         rank: u64,
     },
+    OnlineRankCountEvent {
+        count: u64,
+    },
     StopLiveEvent{
         room_id_list: Vec<u64>
     }
 }
 
-impl From<EventData> for Event {
-    fn from(val: EventData) -> Self {
-        use std::time::*;
-        Event {
-            data: val,
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("时间倒流")
-                .as_millis() as u64,
-        }
-    }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Event {
+    pub data: EventData,
+    pub meta: EventMeta,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Event {
-    #[serde(flatten)]
-    pub data: EventData,
-    pub timestamp: u64,
+pub struct EventMeta {
+    pub lib_version: Cow<'static, str>,
+    pub source: Option<EventSource>,
+    pub time: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EventSource {
+    pub room_id: u64,
+    pub url: reqwest::Url,
+}
+
+impl Default for EventMeta {
+    fn default() -> Self {
+        EventMeta {
+            lib_version: Cow::Borrowed(env!("CARGO_PKG_VERSION")),
+            source: None,
+            time: chrono::Utc::now(),
+        }
+    }
+}
+impl EventMeta {
+    pub fn with_source(source: EventSource) -> Self {
+        EventMeta {
+            source: Some(source),
+            ..Default::default()
+        }
+    }
+
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Event {
+    pub fn is_stop_live(&self) -> bool {
+        if let EventData::StopLiveEvent(StopLiveEvent { room_id_list }) = &self.data {
+            if let Some(source) = &self.meta.source {
+                return room_id_list.contains(&source.room_id);
+            }
+        }
+        false
+    }
 }
 
 #[cfg(feature = "bincode")]

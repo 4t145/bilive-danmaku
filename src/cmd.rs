@@ -419,6 +419,7 @@ impl Cmd {
                 .into(),
             ),
             Cmd::StopLiveRoomList { room_id_list } => Some(StopLiveEvent { room_id_list }.into()),
+            Cmd::OnlineRankCount { count } => Some(OnlineRankCountEvent { count }.into()),
             rest => {
                 log::debug!("unhandled cmd: {:?}", rest);
                 None
