@@ -1,7 +1,7 @@
 use crate::{connection::*, packet::*};
 use bilibili_client::{
     api::live::{
-        danmu_info::RoomPlayInfo,
+        danmu_info::RoomInfo,
         room_play_info::{DanmuInfoData, Host},
     },
     reqwest_client::LoginInfo,
@@ -25,7 +25,7 @@ impl Connector {
     ) -> bilibili_client::reqwest_client::ClientResult<Self> {
         let client = bilibili_client::reqwest_client::Client::default();
         client.set_login_info(&login_info);
-        let RoomPlayInfo { room_id, uid } = client.get_room_play_info(roomid).await?;
+        let RoomInfo { room_id, uid } = client.get_room_play_info(roomid).await?;
         roomid = room_id;
         let DanmuInfoData { token, host_list } = client.get_danmu_info(room_id).await?;
         let connector = Connector {

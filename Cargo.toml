@@ -65,7 +65,8 @@ version = "0.3"
 
 [dependencies.bilibili-client]
 git = "https://github.com/4t145/bilibili-client.git"
-rev = "7cd2683"
+# rev = "7cd2683"
+# path = "C:\\Users\\27970\\Desktop\\bilibili-client"
 features = ["live"]
 default-features = false
 
@@ -97,3 +98,5 @@ json = []
 [dev-dependencies]
 env_logger = "0.10"
 toml = "0.8.6"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.17"

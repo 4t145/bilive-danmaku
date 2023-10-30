@@ -4,10 +4,7 @@ use bilibili_client::reqwest_client::LoginInfo;
 use bilive_danmaku::Connector;
 use futures_util::StreamExt;
 fn main() {
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "debug,bilive_danmaku=debug");
-    }
-    env_logger::init();
+    tracing_subscriber::fmt().with_level(true).with_max_level(tracing::Level::DEBUG).init();
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
