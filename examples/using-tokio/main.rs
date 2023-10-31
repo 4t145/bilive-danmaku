@@ -34,16 +34,9 @@ async fn tokio_main() {
         .map(|s| str::parse::<u64>(&s).expect("invalid room id"))
         .unwrap_or(read_roomid());
     let connector = Connector::init(roomid, login_info).await.unwrap();
-    let mut stream = connector.connect().await.unwrap();
-    while let Some(maybe_evt) = stream.next().await {
-        match maybe_evt {
-            Ok(evt) => {
-                log::info!("{:?}", evt);
-            }
-            Err(e) => {
-                log::warn!("{:?}", e);
-            }
-        }
+    let mut stream = connector.connect_all().await.unwrap();
+    while let Some(evt) = stream.next().await {
+        log::info!("{:?}", evt);
     }
-    stream.abort();
+    // stream.abort();
 }

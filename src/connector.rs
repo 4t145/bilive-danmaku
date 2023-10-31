@@ -1,4 +1,7 @@
-use crate::{connection::*, packet::*};
+use crate::{
+    connection::{synchub::SyncHub, *},
+    packet::*,
+};
 use bilibili_client::{
     api::live::{
         danmu_info::RoomInfo,
@@ -6,6 +9,7 @@ use bilibili_client::{
     },
     reqwest_client::LoginInfo,
 };
+use futures_util::StreamExt;
 
 #[derive(Clone)]
 pub struct Connector {
@@ -68,6 +72,31 @@ impl Connector {
         }
         log::error!("connect error: all host failed");
         Err(ConnectError::HandshakeError)
+    }
+
+    pub async fn connect_all(&self) -> Result<SyncHub, ConnectError> {
+        if self.host_list.is_empty() {
+            return Err(ConnectError::HostListIsEmpty);
+        }
+
+        let mut hub = SyncHub::default();
+        for host in &self.host_list {
+            let url = host.wss();
+            let auth = Auth::new(self.uid, self.roomid, Some(self.token.clone()));
+
+            match Connection::connect(url, auth, self).await {
+                Ok(stream) => {
+                    hub.add_channel(stream.filter_map(|e| async { e.ok() }));
+                }
+                Err(e) => log::warn!("connect error: {:?}", e),
+            }
+        }
+        if hub.channels.is_empty() {
+            log::error!("connect error: all host failed");
+            Err(ConnectError::HandshakeError)
+        } else {
+            Ok(hub)
+        }
     }
 }
 

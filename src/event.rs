@@ -40,7 +40,8 @@ define_event! {
         flag: u64,
         message: DanmakuMessage,
         user: User,
-        fans_medal: Option<FansMedal>
+        fans_medal: Option<FansMedal>,
+        ts: u64,
     },
     EnterRoomEvent {
         user: User,
@@ -57,6 +58,7 @@ define_event! {
         fans_medal: Option<FansMedal>,
         blindbox: Option<GiftType>,
         gift: Gift,
+        rnd: String,
     },
     GuardBuyEvent {
         level: u64,
@@ -95,7 +97,16 @@ define_event! {
     },
     StopLiveEvent{
         room_id_list: Vec<u64>
-    }
+    },
+    RoomChange {
+        area_id: u32,
+        area_name: String,
+        live_key: String,
+        parent_area_id: u32,
+        parent_area_name: String,
+        sub_session_key: String,
+        title: String,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -110,7 +121,6 @@ pub struct EventMeta {
     pub source: Option<EventSource>,
     pub time: chrono::DateTime<chrono::Utc>,
 }
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EventSource {
     pub room_id: u64,

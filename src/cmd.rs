@@ -81,6 +81,7 @@ pub(crate) enum Cmd {
         user: User,
         message: String,
         emoticon: Option<Emoticon>,
+        ts: u64,
     },
     SendGift {
         action: String,
@@ -96,6 +97,7 @@ pub(crate) enum Cmd {
         coin_type: CoinType,
         total_coin: u64,
         blind_gift: Option<BlindGiftInfo>,
+        rnd: String,
     },
     SuperChatMessage {
         medal_info: Option<FansMedal>,
@@ -111,6 +113,15 @@ pub(crate) enum Cmd {
         price: u64,
         uid: u64,
         user_info: SuperChatUser,
+    },
+    RoomChange {
+        area_id: u32,
+        area_name: String,
+        live_key: String,
+        parent_area_id: u32,
+        parent_area_name: String,
+        sub_session_key: String,
+        title: String,
     },
 }
 
@@ -179,6 +190,9 @@ impl Cmd {
                         let user = info[2].as_array().expect(PROTOCOL_ERROR);
                         let uid = user[0].as_u64().expect(PROTOCOL_ERROR);
                         let name = user[1].as_str().expect(PROTOCOL_ERROR);
+                        let ts = info[10].as_object().expect(PROTOCOL_ERROR)["ts"]
+                            .as_u64()
+                            .expect(PROTOCOL_ERROR);
                         let danmaku_type = info[0].as_array().expect(PROTOCOL_ERROR)[10]
                             .as_u64()
                             .expect(PROTOCOL_ERROR);
@@ -237,6 +251,7 @@ impl Cmd {
                             },
                             message: message.to_owned(),
                             emoticon,
+                            ts,
                         };
                         Ok(res)
                     }
@@ -269,6 +284,7 @@ impl Cmd {
                 user,
                 message,
                 emoticon,
+                ts,
             } => match emoticon {
                 Some(emoticon) => Some(EventData::DanmakuEvent(DanmakuEvent {
                     flag: danmaku_type,
@@ -278,12 +294,14 @@ impl Cmd {
                     },
                     user,
                     fans_medal,
+                    ts,
                 })),
                 None => Some(EventData::DanmakuEvent(DanmakuEvent {
                     flag: danmaku_type,
                     message: DanmakuMessage::Plain { message },
                     user,
                     fans_medal,
+                    ts,
                 })),
             },
             Cmd::SuperChatMessage {
@@ -335,6 +353,7 @@ impl Cmd {
                 coin_type,
                 total_coin,
                 blind_gift,
+                rnd,
             } => {
                 if let Some(blind_gift_info) = blind_gift {
                     Some(EventData::GiftEvent(GiftEvent {
@@ -354,6 +373,7 @@ impl Cmd {
                             coin_type,
                             coin_count: total_coin,
                         },
+                        rnd,
                     }))
                 } else {
                     Some(EventData::GiftEvent(GiftEvent {
@@ -369,6 +389,7 @@ impl Cmd {
                             coin_type,
                             coin_count: total_coin,
                         },
+                        rnd,
                     }))
                 }
             }
@@ -420,6 +441,26 @@ impl Cmd {
             ),
             Cmd::StopLiveRoomList { room_id_list } => Some(StopLiveEvent { room_id_list }.into()),
             Cmd::OnlineRankCount { count } => Some(OnlineRankCountEvent { count }.into()),
+            Cmd::RoomChange {
+                area_id,
+                area_name,
+                live_key,
+                parent_area_id,
+                parent_area_name,
+                sub_session_key,
+                title,
+            } => Some(
+                RoomChange {
+                    area_id,
+                    area_name,
+                    live_key,
+                    parent_area_id,
+                    parent_area_name,
+                    sub_session_key,
+                    title,
+                }
+                .into(),
+            ),
             rest => {
                 log::debug!("unhandled cmd: {:?}", rest);
                 None

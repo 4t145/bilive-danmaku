@@ -58,3 +58,5 @@ pub use tokio_connection::TokioConnection as Connection;
 mod wasm_connection;
 #[cfg(feature = "rt_wasm")]
 pub use wasm_connection::WasmConnection as Connection;
+
+pub mod synchub;

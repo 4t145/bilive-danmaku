@@ -77,7 +77,7 @@ use tokio::time::Duration;
 const HB_RATE: Duration = Duration::from_secs(30);
 
 impl TokioConnection {
-    pub async fn connect(
+    pub(crate) async fn connect(
         url: Url,
         auth: Auth,
         connector: &Connector,
@@ -104,7 +104,7 @@ impl TokioConnection {
             .header("Sec-WebSocket-Key", ws2::handshake::client::generate_key())
             .body(())
             .expect("shouldn't fail to build ssh req body");
-        let (mut ws_stream, _resp) = tokio_ws2::connect_async(req).await?;
+        let (mut ws_stream, _resp) = tokio_ws2::connect_async(url.clone()).await?;
         let authpack_bin = RawPacket::build(Operation::Auth, &auth.ser()).ser();
         ws_stream.send(Binary(authpack_bin)).await?;
         let resp = ws_stream.next().await.ok_or_else(|| {

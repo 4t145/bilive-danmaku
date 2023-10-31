@@ -1,0 +1,12 @@
+{
+    "cmd": "ROOM_CHANGE",
+    "data": {
+        "area_id": 192,
+        "area_name": "聊天电台",
+        "live_key": "426739639769693421",
+        "parent_area_id": 5,
+        "parent_area_name": "电台",
+        "sub_session_key": "426739639769693421sub_time:1698718738",
+        "title": "我画我画"
+    }
+}
